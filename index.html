@@ -890,35 +890,38 @@ dialog::backdrop {
 
 /* ═══ PRINT ═══ */
 @media print {
-  @page { size: A4 landscape; margin: 5mm; }
+  @page { size: A4 landscape; margin: 4mm; }
   * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
   .sidebar, .topbar, .toast-container, .sidebar-toggle, .sidebar-overlay, .login-screen { display: none !important; }
   .layout { display: grid !important; grid-template-columns: 1fr; }
   body { background: #fff; }
-  .content { padding: 0; }
+  .content { padding: 0; overflow: visible; }
   .screen { display: none !important; }
-  #painel { display: block !important; }
-  .kpi-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }
-  .kpi-card { padding: 8px 10px; box-shadow: none; border: 1px solid #ccc; }
-  .kpi-label { font-size: 8px; margin-bottom: 3px; }
-  .kpi-value { font-size: 13px; }
-  .kpi-sub { font-size: 8px; margin-top: 2px; }
-  .indicator-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }
-  .indicator-card { padding: 6px 8px; box-shadow: none; border: 1px solid #ccc; }
-  .indicator-label { font-size: 7px; }
-  .indicator-value { font-size: 10px; }
-  .obra-header { gap: 6px; grid-template-columns: 1fr 1fr 1fr; }
-  .obra-header-card { padding: 6px 10px; box-shadow: none; }
-  .obra-header-card label { font-size: 7px; }
-  .obra-header-card input { font-size: 10px; }
-  .table-card { box-shadow: none; margin-bottom: 10px; }
-  .table-card-header { padding: 6px 10px; }
-  .report { min-width: 0 !important; font-size: 9px; }
-  .report th, .report td { padding: 3px 4px; height: auto; }
-  .report th { font-size: 8px; }
-  .chart-container { padding: 8px; }
-  .chart-container canvas { height: 200px !important; }
-  .chart-card { margin-bottom: 0; }
+  #painel { display: block !important; overflow: visible; }
+  .kpi-grid { grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 4px; }
+  .kpi-card { padding: 4px 8px; box-shadow: none; border: 1px solid #ccc; }
+  .kpi-card::before { height: 2px; }
+  .kpi-label { font-size: 7px; margin-bottom: 1px; }
+  .kpi-value { font-size: 11px; }
+  .kpi-sub { font-size: 7px; margin-top: 1px; }
+  .indicator-grid { grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 4px; }
+  .indicator-card { padding: 3px 6px; box-shadow: none; border: 1px solid #ccc; }
+  .indicator-label { font-size: 6px; margin-bottom: 1px; }
+  .indicator-value { font-size: 9px; }
+  .obra-header { gap: 4px; grid-template-columns: 1fr 1fr 1fr; margin-bottom: 4px; }
+  .obra-header-card { padding: 4px 8px; box-shadow: none; }
+  .obra-header-card label { font-size: 6px; margin-bottom: 0; }
+  .obra-header-card input { font-size: 9px; }
+  .table-card { box-shadow: none; margin-bottom: 4px; page-break-inside: avoid; break-inside: avoid; }
+  .table-card-header { padding: 4px 8px; }
+  .table-card-title { font-size: 10px; }
+  .report { min-width: 0 !important; font-size: 8px; }
+  .report th, .report td { padding: 2px 3px; height: auto; }
+  .report th { font-size: 7px; }
+  .chart-card { page-break-inside: avoid; break-inside: avoid; margin-bottom: 0; }
+  .chart-card-header { padding: 4px 8px; font-size: 10px; }
+  .chart-container { padding: 4px; }
+  .chart-container canvas { height: 150px !important; }
 }
 </style>
 </head>
