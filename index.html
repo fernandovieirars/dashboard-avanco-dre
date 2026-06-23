@@ -1,0 +1,1818 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dashboard Avanço DRE — Rio Sul Construções</title>
+<style>
+:root {
+  --bg: #f1f5f9;
+  --surface: #ffffff;
+  --surface-alt: #f8fafc;
+  --border: #e2e8f0;
+  --border-strong: #cbd5e1;
+  --text: #0f172a;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --sidebar-bg: #0f172a;
+  --sidebar-hover: #1e293b;
+  --sidebar-active: #1e293b;
+  --sidebar-text: #cbd5e1;
+  --sidebar-text-active: #f8fafc;
+  --primary: #eab308;
+  --primary-hover: #ca9a06;
+  --primary-text: #0f172a;
+  --blue: #0ea5e9;
+  --blue-bg: #f0f9ff;
+  --green: #22c55e;
+  --green-bg: #f0fdf4;
+  --red: #ef4444;
+  --red-bg: #fef2f2;
+  --orange: #f97316;
+  --orange-bg: #fff7ed;
+  --radius: 8px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.05);
+  --shadow: 0 1px 3px rgba(0,0,0,.1), 0 1px 2px rgba(0,0,0,.06);
+  --shadow-md: 0 4px 6px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.06);
+  --shadow-lg: 0 10px 15px rgba(0,0,0,.1), 0 4px 6px rgba(0,0,0,.05);
+  --transition: 150ms cubic-bezier(.4,0,.2,1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+  overflow-x: hidden;
+}
+
+/* ═══ LOGIN ═══ */
+.login-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+}
+
+.login-card {
+  background: var(--surface);
+  border-radius: 16px;
+  box-shadow: var(--shadow-lg);
+  padding: 40px;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.login-card img {
+  width: 160px;
+  margin-bottom: 24px;
+}
+
+.login-card h1 {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.login-card p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+
+.login-error {
+  background: var(--red-bg);
+  color: var(--red);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px;
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+  display: none;
+}
+
+.login-error.show { display: block; }
+
+/* ═══ LAYOUT ═══ */
+.layout {
+  display: none;
+  grid-template-columns: 260px 1fr;
+  min-height: 100vh;
+}
+
+.layout.active {
+  display: grid;
+}
+
+/* ═══ SIDEBAR ═══ */
+.sidebar {
+  background: var(--sidebar-bg);
+  color: var(--sidebar-text);
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  z-index: 30;
+}
+
+.sidebar-brand {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sidebar-brand img {
+  width: 120px;
+  height: auto;
+  filter: brightness(1.1);
+}
+
+.sidebar-section {
+  padding: 16px 12px 8px;
+}
+
+.sidebar-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  color: var(--text-muted);
+  padding: 0 8px 8px;
+}
+
+.obra-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.obra-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background var(--transition);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.obra-item:hover { background: var(--sidebar-hover); }
+.obra-item.active {
+  background: var(--sidebar-active);
+  color: var(--sidebar-text-active);
+  border-left: 3px solid var(--primary);
+  padding-left: 9px;
+}
+
+.obra-item .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary);
+  flex-shrink: 0;
+}
+
+.sidebar-actions {
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: var(--sidebar-text);
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all var(--transition);
+  font-family: inherit;
+  text-align: left;
+  width: 100%;
+}
+
+.sidebar-btn:hover { background: var(--sidebar-hover); color: var(--sidebar-text-active); }
+.sidebar-btn.danger:hover { background: rgba(239,68,68,.15); color: #fca5a5; }
+
+.sidebar-btn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sidebar-user {
+  padding: 12px 20px;
+  border-top: 1px solid rgba(255,255,255,.08);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sidebar-user-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar-user-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--sidebar-text-active);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-user-role {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 0 0 8px;
+}
+
+.sidebar-footer-version {
+  text-align: center;
+  font-size: 10px;
+  color: rgba(148,163,184,.5);
+  padding: 4px;
+}
+
+.admin-only { display: none; }
+body.is-admin .admin-only { display: flex; }
+
+/* ═══ MAIN ═══ */
+.main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* ═══ TOPBAR ═══ */
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  height: 56px;
+  gap: 8px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.topbar-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin-right: 24px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 400px;
+}
+
+.tab-group {
+  display: flex;
+  gap: 0;
+  height: 100%;
+}
+
+.tab-btn {
+  padding: 0 16px;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  position: relative;
+  transition: color var(--transition);
+  white-space: nowrap;
+}
+
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--text); }
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  background: var(--primary);
+  border-radius: 2px 2px 0 0;
+}
+
+.topbar-spacer { flex: 1; }
+.topbar-actions { display: flex; gap: 8px; align-items: center; }
+
+/* ═══ BUTTONS ═══ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all var(--transition);
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.btn:hover { background: var(--bg); border-color: var(--border-strong); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+.btn svg {
+  width: 15px;
+  height: 15px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: var(--primary-text);
+  border-color: var(--primary);
+}
+.btn-primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
+
+.btn-danger {
+  background: var(--surface);
+  color: var(--red);
+  border-color: var(--red);
+}
+.btn-danger:hover { background: var(--red-bg); }
+
+.btn-ghost {
+  border-color: transparent;
+  background: transparent;
+}
+.btn-ghost:hover { background: var(--bg); }
+
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+.btn-sm svg { width: 13px; height: 13px; }
+
+.btn-full { width: 100%; justify-content: center; padding: 10px 14px; }
+
+/* ═══ CONTENT ═══ */
+.content {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* ═══ OBRA HEADER ═══ */
+.obra-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.obra-header-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+.obra-header-card label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.obra-header-card input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  font-family: inherit;
+  outline: none;
+  padding: 0;
+}
+
+.obra-header-card input:focus { color: var(--blue); }
+.obra-header-card input[readonly] { cursor: default; color: var(--text-secondary); }
+
+/* ═══ KPI CARDS ═══ */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+}
+
+.kpi-card.yellow::before { background: var(--primary); }
+.kpi-card.blue::before { background: var(--blue); }
+.kpi-card.green::before { background: var(--green); }
+.kpi-card.orange::before { background: var(--orange); }
+
+.kpi-label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.kpi-value {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.2;
+  word-break: break-all;
+}
+
+.kpi-sub {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.kpi-sub.positive { color: var(--green); }
+.kpi-sub.negative { color: var(--red); }
+.kpi-sub.neutral { color: var(--text-muted); }
+
+/* ═══ INDICATOR CARDS ═══ */
+.indicator-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.indicator-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.indicator-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.indicator-value {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+/* ═══ TABLE ═══ */
+.table-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  margin-bottom: 24px;
+}
+
+.table-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.table-card-title { font-size: 15px; font-weight: 700; }
+.table-scroll { overflow-x: auto; }
+
+table.report {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.report th {
+  background: var(--sidebar-bg);
+  color: #fff;
+  padding: 10px 12px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  white-space: nowrap;
+  border-right: 1px solid rgba(255,255,255,.1);
+}
+
+.report th:last-child { border-right: none; }
+
+.report td {
+  padding: 8px 10px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.report .row-label {
+  background: var(--surface-alt);
+  font-weight: 700;
+  text-align: left;
+  color: var(--text);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .2px;
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 140px;
+}
+
+.report .row-label.real { color: var(--orange); }
+.report .money-cell { color: var(--text); }
+.report .pct-cell { color: var(--text-secondary); font-size: 12px; }
+
+.report .dev-cell {
+  font-weight: 800;
+  font-size: 12px;
+  color: #fff;
+  min-width: 120px;
+}
+
+.dev-cell.positive { background: var(--green); }
+.dev-cell.negative { background: var(--red); }
+.dev-cell.neutral { background: var(--text-muted); }
+
+.dev-kind {
+  display: block;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  opacity: .85;
+  margin-bottom: 2px;
+}
+
+.editable {
+  display: inline-block;
+  min-width: 60px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  outline: none;
+  transition: all var(--transition);
+  cursor: text;
+}
+
+.editable:hover { background: var(--blue-bg); }
+.editable:focus {
+  background: #fef9c3;
+  box-shadow: 0 0 0 2px var(--primary);
+}
+
+.readonly-cell {
+  display: inline-block;
+  min-width: 60px;
+  padding: 2px 6px;
+  cursor: default;
+}
+
+/* ═══ CHART ═══ */
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  margin-bottom: 24px;
+}
+
+.chart-card-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.chart-container {
+  padding: 16px;
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+}
+
+.chart-container canvas {
+  width: 100%;
+  height: 380px;
+  display: block;
+}
+
+/* ═══ CURVA S ═══ */
+.curve-layout {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 24px;
+}
+
+.curve-table-card, .curve-chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.curve-table-card h2, .curve-chart-card h2 {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.curve-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.curve-table th {
+  background: var(--sidebar-bg);
+  color: #fff;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+
+.curve-table td {
+  padding: 10px 12px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+}
+
+.curve-chart-body {
+  padding: 20px;
+  background: var(--surface);
+}
+
+.curve-chart-body canvas {
+  width: 100%;
+  height: 480px;
+  display: block;
+}
+
+/* ═══ DIALOGS ═══ */
+dialog {
+  border: none;
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(0,0,0,.05);
+  padding: 0;
+  max-width: 440px;
+  width: 90%;
+  font-family: inherit;
+}
+
+dialog::backdrop {
+  background: rgba(15,23,42,.5);
+  backdrop-filter: blur(4px);
+}
+
+.dialog-header { padding: 20px 24px 0; font-size: 17px; font-weight: 700; }
+.dialog-body { padding: 16px 24px; }
+.dialog-footer { padding: 0 24px 20px; display: flex; justify-content: flex-end; gap: 8px; }
+
+.form-group { margin-bottom: 14px; }
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-family: inherit;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface);
+  transition: all var(--transition);
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(234,179,8,.15);
+}
+
+/* ═══ TOASTS ═══ */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 8px;
+}
+
+.toast {
+  background: var(--sidebar-bg);
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: var(--shadow-lg);
+  animation: toastIn .3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toast.success { border-left: 3px solid var(--green); }
+.toast.error { border-left: 3px solid var(--red); }
+.toast.info { border-left: 3px solid var(--blue); }
+.toast.out { animation: toastOut .25s ease forwards; }
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(12px) scale(.96); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes toastOut {
+  to { opacity: 0; transform: translateY(-8px) scale(.96); }
+}
+
+/* ═══ MONTH TOOLBAR ═══ */
+.month-toolbar { display: flex; gap: 6px; }
+
+/* ═══ LOADING ═══ */
+.loading-spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ═══ ROLE BADGE ═══ */
+.role-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+
+.role-badge.admin { background: rgba(234,179,8,.2); color: var(--primary); }
+.role-badge.viewer { background: rgba(100,116,139,.15); color: var(--text-secondary); }
+
+/* ═══ MOBILE ═══ */
+.sidebar-toggle {
+  display: none;
+  border: none;
+  background: transparent;
+  padding: 8px;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.sidebar-toggle svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.4);
+  z-index: 25;
+}
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar {
+    position: fixed;
+    left: -280px;
+    width: 260px;
+    transition: left .25s ease;
+  }
+  .sidebar.open { left: 0; }
+  .sidebar-overlay.open { display: block; }
+  .sidebar-toggle { display: block; }
+  .kpi-grid, .indicator-grid { grid-template-columns: 1fr 1fr; }
+  .obra-header { grid-template-columns: 1fr; }
+  .curve-layout { grid-template-columns: 1fr; }
+  .content { padding: 16px; }
+}
+
+/* ═══ PRINT ═══ */
+@media print {
+  @page { size: A4 landscape; margin: 5mm; }
+  * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .sidebar, .topbar, .toast-container, .sidebar-toggle, .sidebar-overlay, .login-screen { display: none !important; }
+  .layout { display: grid !important; grid-template-columns: 1fr; }
+  body { background: #fff; }
+  .content { padding: 0; }
+  .screen { display: none !important; }
+  #painel { display: block !important; }
+  .kpi-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .kpi-card { padding: 8px 10px; box-shadow: none; border: 1px solid #ccc; }
+  .kpi-label { font-size: 8px; margin-bottom: 3px; }
+  .kpi-value { font-size: 13px; }
+  .kpi-sub { font-size: 8px; margin-top: 2px; }
+  .indicator-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .indicator-card { padding: 6px 8px; box-shadow: none; border: 1px solid #ccc; }
+  .indicator-label { font-size: 7px; }
+  .indicator-value { font-size: 10px; }
+  .obra-header { gap: 6px; grid-template-columns: 1fr 1fr 1fr; }
+  .obra-header-card { padding: 6px 10px; box-shadow: none; }
+  .obra-header-card label { font-size: 7px; }
+  .obra-header-card input { font-size: 10px; }
+  .table-card { box-shadow: none; margin-bottom: 10px; }
+  .table-card-header { padding: 6px 10px; }
+  .report { min-width: 0 !important; font-size: 9px; }
+  .report th, .report td { padding: 3px 4px; height: auto; }
+  .report th { font-size: 8px; }
+  .chart-container { padding: 8px; }
+  .chart-container canvas { height: 200px !important; }
+  .chart-card { margin-bottom: 0; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <img src="RioSul_logo.svg" alt="Rio Sul Construções">
+    <h1>Avanço Físico / DRE</h1>
+    <p>Faça login com suas credenciais Rio Sul</p>
+    <div class="login-error" id="loginError"></div>
+    <div class="form-group">
+      <label for="loginEmail">E-mail</label>
+      <input class="form-input" id="loginEmail" type="email" placeholder="seu@email.com">
+    </div>
+    <div class="form-group">
+      <label for="loginPassword">Senha</label>
+      <input class="form-input" id="loginPassword" type="password" placeholder="Sua senha">
+    </div>
+    <button class="btn btn-primary btn-full" id="loginBtn">Entrar</button>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="layout" id="appLayout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <img src="RioSul_logo.svg" alt="Rio Sul Construções">
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Obras</div>
+      <ul class="obra-list" id="obraList"></ul>
+    </div>
+
+    <div class="sidebar-actions admin-only">
+      <button class="sidebar-btn" onclick="App.newObra()">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nova Obra
+      </button>
+      <button class="sidebar-btn" onclick="App.editObra()">
+        <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Editar Obra
+      </button>
+      <button class="sidebar-btn" onclick="App.duplicateObra()">
+        <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Duplicar
+      </button>
+      <button class="sidebar-btn danger" onclick="App.deleteObra()">
+        <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        Excluir Obra
+      </button>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name" id="userName">—</div>
+          <span class="role-badge" id="userRole">—</span>
+        </div>
+        <button class="sidebar-btn" onclick="App.logout()" style="width:auto;padding:6px" title="Sair">
+          <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
+      </div>
+      <div class="sidebar-footer-version">Dashboard Avanço DRE v3.0</div>
+    </div>
+  </aside>
+
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="App.toggleSidebar()"></div>
+
+  <div class="main">
+    <nav class="topbar">
+      <button class="sidebar-toggle" onclick="App.toggleSidebar()">
+        <svg viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <span class="topbar-title" id="topbarTitle">—</span>
+
+      <div class="tab-group">
+        <button class="tab-btn active" data-screen="painel">Painel</button>
+        <button class="tab-btn" data-screen="curva">Curva S</button>
+      </div>
+
+      <div class="topbar-spacer"></div>
+
+      <div class="topbar-actions">
+        <div class="month-toolbar admin-only">
+          <button class="btn btn-sm btn-ghost" onclick="App.addPreviousMonth()" title="Mês no início">
+            <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Mês
+          </button>
+          <button class="btn btn-sm btn-ghost" onclick="App.addMonth()" title="Mês no final">
+            Mês <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <button class="btn btn-sm btn-ghost" onclick="App.removeMonth()" title="Remover último mês">
+            <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+        </div>
+        <button class="btn btn-primary" onclick="App.save()">
+          <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Salvar
+        </button>
+        <button class="btn" onclick="App.exportCsv()">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          CSV
+        </button>
+        <button class="btn" onclick="App.printPdf()">
+          <svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          PDF
+        </button>
+      </div>
+    </nav>
+
+    <div class="content">
+      <section id="painel" class="screen active">
+        <div class="obra-header">
+          <div class="obra-header-card">
+            <label>Contrato</label>
+            <input id="headerContract" spellcheck="false">
+          </div>
+          <div class="obra-header-card">
+            <label>Valor do Contrato</label>
+            <input id="headerValue" spellcheck="false">
+          </div>
+          <div class="obra-header-card">
+            <label>Atualização</label>
+            <input id="headerUpdated" spellcheck="false">
+          </div>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi-card blue"><div class="kpi-label">Previsto Acumulado</div><div class="kpi-value" id="kpiPlanned">—</div></div>
+          <div class="kpi-card green"><div class="kpi-label">Real Acumulado</div><div class="kpi-value" id="kpiReal">—</div></div>
+          <div class="kpi-card yellow"><div class="kpi-label">Avanço Real</div><div class="kpi-value" id="kpiProgress">—</div></div>
+          <div class="kpi-card orange"><div class="kpi-label">Desvio Financeiro</div><div class="kpi-value" id="kpiDeviation">—</div><div class="kpi-sub" id="kpiDeviationSub"></div></div>
+        </div>
+
+        <div class="indicator-grid">
+          <div class="indicator-card"><div class="indicator-label">Valor da Obra</div><div class="indicator-value" id="indContract">—</div></div>
+          <div class="indicator-card"><div class="indicator-label">Saldo a Executar</div><div class="indicator-value" id="indBalance">—</div></div>
+          <div class="indicator-card"><div class="indicator-label">Previsto no Mês</div><div class="indicator-value" id="indPlannedMonth">—</div></div>
+          <div class="indicator-card"><div class="indicator-label">Real no Mês</div><div class="indicator-value" id="indRealMonth">—</div></div>
+          <div class="indicator-card"><div class="indicator-label">Avanço Previsto</div><div class="indicator-value" id="indPlannedPct">—</div></div>
+          <div class="indicator-card"><div class="indicator-label">Desvio em p.p.</div><div class="indicator-value" id="indDeviationPp">—</div></div>
+          <div class="indicator-card"><div class="indicator-label">Meses Realizados</div><div class="indicator-value" id="indRealMonths">—</div></div>
+          <div class="indicator-card"><div class="indicator-label">Tendência Final</div><div class="indicator-value" id="indTrend">—</div></div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-card-header">
+            <span class="table-card-title">Avanço Físico Mensal (Real x Orçado)</span>
+          </div>
+          <div class="table-scroll">
+            <table class="report">
+              <thead id="reportHead"></thead>
+              <tbody id="reportBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-card-header">Desempenho Mensal</div>
+          <div class="chart-container"><canvas id="monthlyChart"></canvas></div>
+        </div>
+      </section>
+
+      <section id="curva" class="screen">
+        <div class="curve-layout">
+          <div class="curve-table-card">
+            <h2>Base da Curva S</h2>
+            <table class="curve-table">
+              <thead><tr><th>Mês</th><th>Orçado</th><th>Real</th><th>Tendência</th></tr></thead>
+              <tbody id="curveRows"></tbody>
+            </table>
+          </div>
+          <div class="curve-chart-card">
+            <h2>Curva S com Tendência</h2>
+            <div class="curve-chart-body"><canvas id="curveChart"></canvas></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- DIALOGS -->
+<dialog id="obraDialog">
+  <div class="dialog-header" id="obraDialogTitle">Nova Obra</div>
+  <div class="dialog-body">
+    <div class="form-group">
+      <label for="dlgObraName">Nome da Obra</label>
+      <input class="form-input" id="dlgObraName" placeholder="Ex: CBA-25054">
+    </div>
+    <div class="form-group">
+      <label for="dlgObraValue">Valor do Contrato</label>
+      <input class="form-input" id="dlgObraValue" placeholder="R$ 0,00">
+    </div>
+  </div>
+  <div class="dialog-footer">
+    <button class="btn" onclick="document.getElementById('obraDialog').close()">Cancelar</button>
+    <button class="btn btn-primary" id="obraDialogConfirm">Confirmar</button>
+  </div>
+</dialog>
+
+<dialog id="confirmDialog">
+  <div class="dialog-header" id="confirmTitle">Confirmar</div>
+  <div class="dialog-body"><p id="confirmMessage"></p></div>
+  <div class="dialog-footer">
+    <button class="btn" id="confirmCancel">Cancelar</button>
+    <button class="btn btn-danger" id="confirmOk">Confirmar</button>
+  </div>
+</dialog>
+
+<div class="toast-container" id="toasts"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const App = (() => {
+  const SUPABASE_URL = 'https://sxinynzkudlkzvjajvaq.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN4aW55bnprdWRsa3p2amFqdmFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwNDM4NzAsImV4cCI6MjA5NjYxOTg3MH0.Vibd-u9B0nHiesMh7ADT0xnlUPb8IwQ6iaTuTi8mJxQ';
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+  const PCT = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
+  const PT_MONTHS = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+
+  let isAdmin = false;
+  let profile = null;
+  let obras = [];
+  let currentIdx = 0;
+  let state = null;
+
+  function parseNum(v) {
+    if (v == null) return null;
+    const t = String(v).replace(/[^0-9,.\-]/g, '').replace(/\./g, '').replace(',', '.').trim();
+    if (!t) return null;
+    const n = Number(t);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function parsePct(v) {
+    const n = parseNum(String(v ?? '').replace('%', ''));
+    return n == null ? null : n / 100;
+  }
+
+  function money(v) { return v == null || !Number.isFinite(v) ? '—' : BRL.format(v); }
+
+  function compactMoney(v) {
+    if (v == null || !Number.isFinite(v)) return '—';
+    if (Math.abs(v) >= 1e6) return 'R$ ' + (v/1e6).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' mi';
+    if (Math.abs(v) >= 1e3) return 'R$ ' + (v/1e3).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' mil';
+    return money(v);
+  }
+
+  function pct(v) { return v == null || !Number.isFinite(v) ? '—' : PCT.format(v * 100) + '%'; }
+  function upper(v) { return String(v ?? '').trim().toLocaleUpperCase('pt-BR'); }
+
+  function plannedAccum() { let s = 0; return state.orcado_mensal.map(v => v == null ? null : (s += v)); }
+  function realAccum() { let s = 0; return state.real_mensal.map(v => v == null ? null : (s += v)); }
+
+  function lastRealIdx() {
+    for (let i = state.real_mensal.length - 1; i >= 0; i--)
+      if (state.real_mensal[i] != null) return i;
+    return -1;
+  }
+
+  function metrics() {
+    const pa = plannedAccum(), ra = realAccum(), idx = lastRealIdx();
+    const cv = state.valor_contrato || 0;
+    const pAt = idx >= 0 ? pa[idx] : null;
+    const rAt = idx >= 0 ? ra[idx] : null;
+    return {
+      cv, pa, ra, idx, pAt, rAt,
+      mDevM: idx >= 0 && state.real_mensal[idx] != null && state.orcado_mensal[idx] != null ? state.real_mensal[idx] - state.orcado_mensal[idx] : null,
+      mDevP: idx >= 0 && state.real_mensal[idx] != null && state.orcado_mensal[idx] != null && cv ? state.real_mensal[idx]/cv - state.orcado_mensal[idx]/cv : null,
+      aDevM: rAt != null && pAt != null ? rAt - pAt : null,
+      aDevP: rAt != null && pAt != null && cv ? rAt/cv - pAt/cv : null,
+    };
+  }
+
+  function trendValues() {
+    const m = metrics();
+    if (m.idx < 0 || m.rAt == null || !m.cv) return state.meses.map(() => null);
+    const rate = (m.rAt / m.cv) / (m.idx + 1);
+    return state.meses.map((_, i) => Math.min(1, rate * (i + 1)));
+  }
+
+  function devStatus(v) {
+    if (v == null || !Number.isFinite(v)) return { label: '', cls: 'neutral' };
+    if (v > 0) return { label: 'Positivo', cls: 'positive' };
+    if (v < 0) return { label: 'Negativo', cls: 'negative' };
+    return { label: 'Sem desvio', cls: 'neutral' };
+  }
+
+  function nextMonth(months) {
+    const last = months[months.length - 1] || 'mai/26';
+    const match = String(last).toLowerCase().match(/^([a-zç]{3})\/(\d{2})$/);
+    if (!match) return `mês ${months.length + 1}`;
+    const idx = PT_MONTHS.indexOf(match[1]);
+    if (idx < 0) return `mês ${months.length + 1}`;
+    const ni = (idx + 1) % 12;
+    return `${PT_MONTHS[ni]}/${String(Number(match[2]) + (ni === 0 ? 1 : 0)).padStart(2,'0')}`;
+  }
+
+  function prevMonth(months) {
+    const first = months[0] || 'mai/26';
+    const match = String(first).toLowerCase().match(/^([a-zç]{3})\/(\d{2})$/);
+    if (!match) return 'mês anterior';
+    const idx = PT_MONTHS.indexOf(match[1]);
+    if (idx < 0) return 'mês anterior';
+    const pi = (idx + 11) % 12;
+    return `${PT_MONTHS[pi]}/${String(Number(match[2]) - (pi === 11 ? 1 : 0)).padStart(2,'0')}`;
+  }
+
+  function toast(msg, type = 'info') {
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.textContent = msg;
+    document.getElementById('toasts').appendChild(el);
+    setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 300); }, 2500);
+  }
+
+  function showConfirm(title, message) {
+    return new Promise(resolve => {
+      const dlg = document.getElementById('confirmDialog');
+      document.getElementById('confirmTitle').textContent = title;
+      document.getElementById('confirmMessage').textContent = message;
+      const ok = document.getElementById('confirmOk');
+      const cancel = document.getElementById('confirmCancel');
+      const cleanup = () => { dlg.close(); ok.onclick = null; cancel.onclick = null; dlg.onclose = null; };
+      ok.onclick = () => { cleanup(); resolve(true); };
+      cancel.onclick = () => { cleanup(); resolve(false); };
+      dlg.onclose = () => { cleanup(); resolve(false); };
+      dlg.showModal();
+    });
+  }
+
+  // ═══ AUTH ═══
+  async function login() {
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const errEl = document.getElementById('loginError');
+    if (!email || !password) { errEl.textContent = 'Preencha e-mail e senha'; errEl.classList.add('show'); return; }
+
+    document.getElementById('loginBtn').disabled = true;
+    document.getElementById('loginBtn').innerHTML = '<span class="loading-spinner"></span> Entrando...';
+
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) {
+      errEl.textContent = 'E-mail ou senha incorretos';
+      errEl.classList.add('show');
+      document.getElementById('loginBtn').disabled = false;
+      document.getElementById('loginBtn').textContent = 'Entrar';
+      return;
+    }
+    await initApp();
+  }
+
+  async function logout() {
+    await sb.auth.signOut();
+    document.getElementById('loginScreen').style.display = '';
+    document.getElementById('appLayout').classList.remove('active');
+    document.body.classList.remove('is-admin');
+    document.getElementById('loginEmail').value = '';
+    document.getElementById('loginPassword').value = '';
+    document.getElementById('loginBtn').disabled = false;
+    document.getElementById('loginBtn').textContent = 'Entrar';
+    document.getElementById('loginError').classList.remove('show');
+  }
+
+  async function initApp() {
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return;
+
+    const { data: prof } = await sb.from('profiles').select('*').eq('id', user.id).single();
+    profile = prof || {};
+    isAdmin = !!profile.is_supervisor;
+
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appLayout').classList.add('active');
+
+    if (isAdmin) document.body.classList.add('is-admin');
+    else document.body.classList.remove('is-admin');
+
+    document.getElementById('userName').textContent = profile.nome || user.email;
+    const badge = document.getElementById('userRole');
+    badge.textContent = isAdmin ? 'Supervisor' : 'Usuário';
+    badge.className = 'role-badge ' + (isAdmin ? 'admin' : 'viewer');
+
+    if (!isAdmin) {
+      document.getElementById('headerContract').readOnly = true;
+      document.getElementById('headerValue').readOnly = true;
+      document.getElementById('headerUpdated').readOnly = true;
+    }
+
+    await loadObras();
+  }
+
+  async function loadObras() {
+    const { data, error } = await sb.from('dre_obras').select('*').order('created_at', { ascending: true });
+    if (error) { toast('Erro ao carregar obras: ' + error.message, 'error'); return; }
+    obras = data || [];
+    if (obras.length === 0 && isAdmin) {
+      toast('Nenhuma obra encontrada. Crie a primeira.', 'info');
+      state = { id: null, nome: '', contrato: '', valor_contrato: 0, atualizado_em: '', meses: [], orcado_mensal: [], real_mensal: [] };
+    } else if (obras.length > 0) {
+      currentIdx = 0;
+      state = obras[currentIdx];
+    }
+    if (state) render();
+  }
+
+  // ═══ RENDER ═══
+  function render() {
+    if (!state) return;
+    renderSidebar();
+    renderHeader();
+    renderKpis();
+    renderTable();
+    bindEditable();
+    renderCurveTable();
+    requestAnimationFrame(() => { drawMonthly(); drawCurve(); });
+  }
+
+  function renderSidebar() {
+    const list = document.getElementById('obraList');
+    list.innerHTML = obras.map((o, i) => {
+      const active = i === currentIdx ? ' active' : '';
+      return `<li class="obra-item${active}" data-idx="${i}"><span class="dot"></span>${o.nome || 'SEM NOME'}</li>`;
+    }).join('');
+    list.querySelectorAll('.obra-item').forEach(el => {
+      el.addEventListener('click', () => switchObra(Number(el.dataset.idx)));
+    });
+    document.getElementById('topbarTitle').textContent = state.nome || '—';
+  }
+
+  function renderHeader() {
+    document.getElementById('headerContract').value = state.contrato || '';
+    document.getElementById('headerValue').value = money(state.valor_contrato);
+    document.getElementById('headerUpdated').value = state.atualizado_em || '';
+  }
+
+  function renderKpis() {
+    if (!state.meses || !state.meses.length) return;
+    const m = metrics();
+    const pFinal = [...m.pa].reverse().find(v => v != null);
+    const rFinal = [...m.ra].reverse().find(v => v != null);
+    document.getElementById('kpiPlanned').textContent = compactMoney(pFinal);
+    document.getElementById('kpiReal').textContent = compactMoney(rFinal);
+    document.getElementById('kpiProgress').textContent = pct(rFinal == null || !m.cv ? null : rFinal / m.cv);
+    document.getElementById('kpiDeviation').textContent = money(m.aDevM);
+    const ds = devStatus(m.aDevM);
+    const sub = document.getElementById('kpiDeviationSub');
+    sub.textContent = ds.label;
+    sub.className = 'kpi-sub ' + ds.cls;
+
+    const realMonth = m.idx >= 0 ? state.real_mensal[m.idx] : null;
+    const plannedMonth = m.idx >= 0 ? state.orcado_mensal[m.idx] : null;
+    const pPctCurr = m.pAt == null || !m.cv ? null : m.pAt / m.cv;
+    const rPctCurr = rFinal == null || !m.cv ? null : rFinal / m.cv;
+    const devPp = rPctCurr == null || pPctCurr == null ? null : (rPctCurr - pPctCurr) * 100;
+    const realizedCount = state.real_mensal.filter(v => v != null).length;
+    const trend = trendValues();
+    const finalTrend = [...trend].reverse().find(v => v != null);
+
+    document.getElementById('indContract').textContent = money(m.cv);
+    document.getElementById('indBalance').textContent = money(rFinal == null ? m.cv : m.cv - rFinal);
+    document.getElementById('indPlannedMonth').textContent = money(plannedMonth);
+    document.getElementById('indRealMonth').textContent = money(realMonth);
+    document.getElementById('indPlannedPct').textContent = pct(pPctCurr);
+    document.getElementById('indDeviationPp').textContent = devPp == null ? '—' : devPp.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' p.p.';
+    document.getElementById('indRealMonths').textContent = `${realizedCount} de ${state.meses.length}`;
+    document.getElementById('indTrend').textContent = pct(finalTrend);
+  }
+
+  function editableCell(value, type, index) {
+    const canEdit = isAdmin || type === 'real' || type === 'realPct';
+    if (canEdit) return `<span class="editable" contenteditable="true" data-type="${type}" data-index="${index}">${value}</span>`;
+    return `<span class="readonly-cell">${value}</span>`;
+  }
+
+  function renderTable() {
+    if (!state.meses || !state.meses.length) {
+      document.getElementById('reportHead').innerHTML = '';
+      document.getElementById('reportBody').innerHTML = '<tr><td style="padding:40px;text-align:center;color:var(--text-muted)">Nenhum mês cadastrado</td></tr>';
+      return;
+    }
+    const m = metrics();
+    const ppct = state.orcado_mensal.map(v => v == null || !m.cv ? null : v / m.cv);
+    const pa = m.pa, paPct = pa.map(v => v == null || !m.cv ? null : v / m.cv);
+    const ra = m.ra;
+    const rpct = state.real_mensal.map(v => v == null || !m.cv ? null : v / m.cv);
+    const raPct = ra.map(v => v == null || !m.cv ? null : v / m.cv);
+    const mds = devStatus(m.mDevM);
+    const ads = devStatus(m.aDevM);
+
+    document.getElementById('reportHead').innerHTML = `<tr>
+      <th>Total Geral</th>
+      ${state.meses.map((mo, i) => `<th>${editableCell(mo, 'month', i)}</th>`).join('')}
+      <th>Desvio (%)</th><th>Desvio (R$)</th>
+    </tr>`;
+
+    const devCell = (val, formatted, status) =>
+      `<td class="dev-cell ${status.cls}" rowspan="2"><span class="dev-kind">${status.label}</span>${formatted}</td>`;
+
+    document.getElementById('reportBody').innerHTML = `
+      <tr><td class="row-label" rowspan="2">Orçado Mensal</td>
+        ${state.orcado_mensal.map((v,i) => `<td class="money-cell">${editableCell(money(v),'planned',i)}</td>`).join('')}
+        <td rowspan="6"></td><td rowspan="6"></td>
+      </tr>
+      <tr>${ppct.map((v,i) => `<td class="pct-cell">${editableCell(pct(v),'plannedPct',i)}</td>`).join('')}</tr>
+      <tr><td class="row-label" rowspan="2">Orçado Acum.</td>
+        ${pa.map(v => `<td class="money-cell">${money(v)}</td>`).join('')}
+      </tr>
+      <tr>${paPct.map(v => `<td class="pct-cell">${pct(v)}</td>`).join('')}</tr>
+      <tr><td class="row-label real" rowspan="2">Real Mensal</td>
+        ${state.real_mensal.map((v,i) => `<td class="money-cell">${editableCell(money(v),'real',i)}</td>`).join('')}
+        ${devCell(m.mDevM, pct(m.mDevP), mds)}
+        ${devCell(m.mDevM, money(m.mDevM), mds)}
+      </tr>
+      <tr>${rpct.map((v,i) => `<td class="pct-cell">${editableCell(pct(v),'realPct',i)}</td>`).join('')}</tr>
+      <tr><td class="row-label real" rowspan="2">Real Acum.</td>
+        ${ra.map(v => `<td class="money-cell">${money(v)}</td>`).join('')}
+        ${devCell(m.aDevM, pct(m.aDevP), ads)}
+        ${devCell(m.aDevM, money(m.aDevM), ads)}
+      </tr>
+      <tr>${raPct.map(v => `<td class="pct-cell">${pct(v)}</td>`).join('')}</tr>
+    `;
+  }
+
+  function bindEditable() {
+    document.querySelectorAll('.editable').forEach(el => {
+      el.addEventListener('blur', () => {
+        const { type, index } = el.dataset;
+        const i = Number(index);
+        const cv = state.valor_contrato || 0;
+        if (type === 'month' && isAdmin) state.meses[i] = el.textContent.trim() || `mês ${i+1}`;
+        if (type === 'planned' && isAdmin) state.orcado_mensal[i] = parseNum(el.textContent);
+        if (type === 'plannedPct' && isAdmin) { const v = parsePct(el.textContent); state.orcado_mensal[i] = v == null ? null : v * cv; }
+        if (type === 'real') state.real_mensal[i] = parseNum(el.textContent);
+        if (type === 'realPct') { const v = parsePct(el.textContent); state.real_mensal[i] = v == null ? null : v * cv; }
+        render();
+      });
+      el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); el.blur(); } });
+    });
+  }
+
+  function renderCurveTable() {
+    if (!state.meses || !state.meses.length) { document.getElementById('curveRows').innerHTML = ''; return; }
+    const m = metrics();
+    const trend = trendValues();
+    document.getElementById('curveRows').innerHTML = state.meses.map((mo, i) => `<tr>
+      <td>${mo}</td>
+      <td>${pct(m.pa[i] == null || !m.cv ? null : m.pa[i]/m.cv)}</td>
+      <td>${pct(m.ra[i] == null || !m.cv ? null : m.ra[i]/m.cv)}</td>
+      <td>${pct(trend[i])}</td>
+    </tr>`).join('');
+  }
+
+  // ═══ CHARTS ═══
+  function prepCanvas(canvas) {
+    const ctx = canvas.getContext('2d');
+    const r = Math.max(2, window.devicePixelRatio || 1);
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = Math.max(1, Math.floor(rect.width * r));
+    canvas.height = Math.max(1, Math.floor(rect.height * r));
+    ctx.setTransform(r, 0, 0, r, 0, 0);
+    ctx.clearRect(0, 0, rect.width, rect.height);
+    return { ctx, w: rect.width, h: rect.height };
+  }
+
+  function roundRect(ctx, x, y, w, h, rad) {
+    ctx.beginPath();
+    ctx.moveTo(x + rad, y); ctx.lineTo(x + w - rad, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + rad); ctx.lineTo(x + w, y + h - rad);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - rad, y + h); ctx.lineTo(x + rad, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - rad); ctx.lineTo(x, y + rad);
+    ctx.quadraticCurveTo(x, y, x + rad, y); ctx.closePath();
+  }
+
+  function drawMonthly() {
+    const canvas = document.getElementById('monthlyChart');
+    if (!canvas || !canvas.offsetParent || !state.meses || !state.meses.length) return;
+    const { ctx, w, h } = prepCanvas(canvas);
+    const pad = { left: 100, right: 30, top: 30, bottom: 60 };
+    const pw = w - pad.left - pad.right, ph = h - pad.top - pad.bottom;
+    const max = Math.max(1000, ...state.orcado_mensal.filter(Boolean), ...state.real_mensal.filter(Boolean)) * 1.18;
+    const y = v => pad.top + (max - v) / max * ph;
+    const xg = i => pad.left + (i + .5) * (pw / state.meses.length);
+    const bw = Math.min(32, pw / state.meses.length / 3.5);
+
+    ctx.font = '600 11px Segoe UI, system-ui';
+    ctx.strokeStyle = 'rgba(255,255,255,.08)'; ctx.fillStyle = 'rgba(255,255,255,.5)';
+    for (let p = 0; p <= 1; p += .25) {
+      const yy = y(max * p);
+      ctx.beginPath(); ctx.moveTo(pad.left, yy); ctx.lineTo(w - pad.right, yy); ctx.stroke();
+      ctx.textAlign = 'right'; ctx.fillText(compactMoney(max * p), pad.left - 10, yy + 4);
+    }
+    const zero = y(0);
+    ctx.strokeStyle = 'rgba(255,255,255,.3)';
+    ctx.beginPath(); ctx.moveTo(pad.left, zero); ctx.lineTo(w - pad.right, zero); ctx.stroke();
+
+    state.meses.forEach((mo, i) => {
+      const gx = xg(i);
+      ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.textAlign = 'center';
+      ctx.font = '600 11px Segoe UI, system-ui'; ctx.fillText(mo, gx, h - 30);
+      if (state.orcado_mensal[i] != null) {
+        const grad = ctx.createLinearGradient(0, y(state.orcado_mensal[i]), 0, zero);
+        grad.addColorStop(0, '#38bdf8'); grad.addColorStop(1, '#0284c7');
+        ctx.fillStyle = grad;
+        roundRect(ctx, gx - bw - 3, y(state.orcado_mensal[i]), bw, zero - y(state.orcado_mensal[i]), 3); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.font = '700 10px Segoe UI';
+        ctx.fillText(compactMoney(state.orcado_mensal[i]), gx - bw/2 - 3, y(state.orcado_mensal[i]) - 8);
+      }
+      if (state.real_mensal[i] != null) {
+        const grad = ctx.createLinearGradient(0, y(state.real_mensal[i]), 0, zero);
+        grad.addColorStop(0, '#fb923c'); grad.addColorStop(1, '#ea580c');
+        ctx.fillStyle = grad;
+        roundRect(ctx, gx + 3, y(state.real_mensal[i]), bw, zero - y(state.real_mensal[i]), 3); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.font = '700 10px Segoe UI';
+        ctx.fillText(compactMoney(state.real_mensal[i]), gx + bw/2 + 3, y(state.real_mensal[i]) - 8);
+      }
+    });
+
+    ctx.font = '600 11px Segoe UI';
+    const lx = w / 2 - 70;
+    ctx.fillStyle = '#0ea5e9'; roundRect(ctx, lx, h - 16, 10, 10, 2); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.fillText('Previsto', lx + 14, h - 7);
+    ctx.fillStyle = '#f97316'; roundRect(ctx, lx + 82, h - 16, 10, 10, 2); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.fillText('Real', lx + 96, h - 7);
+  }
+
+  function drawCurve() {
+    const canvas = document.getElementById('curveChart');
+    if (!canvas || !canvas.offsetParent || !state.meses || !state.meses.length) return;
+    const { ctx, w, h } = prepCanvas(canvas);
+    const m = metrics(); const trend = trendValues();
+    const planned = m.pa.map(v => v == null || !m.cv ? null : v / m.cv);
+    const real = m.ra.map(v => v == null || !m.cv ? null : v / m.cv);
+    const pad = { left: 60, right: 24, top: 24, bottom: 56 };
+    const pw = w - pad.left - pad.right, ph = h - pad.top - pad.bottom;
+    const x = i => pad.left + i * (pw / Math.max(1, state.meses.length - 1));
+    const y = v => pad.top + (1 - v) * ph;
+
+    ctx.strokeStyle = '#e2e8f0'; ctx.fillStyle = '#94a3b8'; ctx.font = '600 11px Segoe UI';
+    for (let p = 0; p <= 1; p += .2) {
+      const yy = y(p);
+      ctx.beginPath(); ctx.moveTo(pad.left, yy); ctx.lineTo(w - pad.right, yy); ctx.stroke();
+      ctx.textAlign = 'right'; ctx.fillText(Math.round(p * 100) + '%', pad.left - 10, yy + 4);
+    }
+    state.meses.forEach((mo, i) => { ctx.fillStyle = '#64748b'; ctx.textAlign = 'center'; ctx.fillText(mo, x(i), h - 24); });
+
+    ctx.strokeStyle = '#0ea5e9'; ctx.lineWidth = 3; ctx.lineJoin = 'round'; ctx.beginPath();
+    let started = false;
+    planned.forEach((v, i) => { if (v == null) return; if (!started) { ctx.moveTo(x(i), y(v)); started = true; } else ctx.lineTo(x(i), y(v)); });
+    ctx.stroke();
+
+    ctx.strokeStyle = '#f97316'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]); ctx.beginPath();
+    started = false;
+    trend.forEach((v, i) => { if (v == null) return; if (!started) { ctx.moveTo(x(i), y(v)); started = true; } else ctx.lineTo(x(i), y(v)); });
+    ctx.stroke(); ctx.setLineDash([]);
+
+    real.forEach((v, i) => {
+      if (v == null) return;
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(x(i), y(v), 7, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#22c55e'; ctx.beginPath(); ctx.arc(x(i), y(v), 5, 0, Math.PI * 2); ctx.fill();
+    });
+
+    ctx.font = '600 11px Segoe UI';
+    const lx = w / 2 - 140, ly = h - 8;
+    ctx.strokeStyle = '#0ea5e9'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(lx, ly - 4); ctx.lineTo(lx + 18, ly - 4); ctx.stroke();
+    ctx.fillStyle = '#334155'; ctx.textAlign = 'left'; ctx.fillText('Orçado Acum.', lx + 22, ly);
+    ctx.fillStyle = '#22c55e'; ctx.beginPath(); ctx.arc(lx + 130, ly - 4, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#334155'; ctx.fillText('Real Acum.', lx + 140, ly);
+    ctx.strokeStyle = '#f97316'; ctx.lineWidth = 2; ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(lx + 230, ly - 4); ctx.lineTo(lx + 248, ly - 4); ctx.stroke();
+    ctx.setLineDash([]); ctx.fillStyle = '#334155'; ctx.fillText('Tendência', lx + 252, ly);
+  }
+
+  // ═══ ACTIONS ═══
+  async function save() {
+    if (!state || !state.id) return toast('Nenhuma obra selecionada', 'error');
+
+    if (isAdmin) {
+      syncHeaderInputs();
+      const { error } = await sb.from('dre_obras').update({
+        nome: state.nome,
+        contrato: state.contrato,
+        valor_contrato: state.valor_contrato,
+        atualizado_em: state.atualizado_em,
+        meses: state.meses,
+        orcado_mensal: state.orcado_mensal,
+        real_mensal: state.real_mensal,
+        updated_at: new Date().toISOString(),
+      }).eq('id', state.id);
+      if (error) return toast('Erro ao salvar: ' + error.message, 'error');
+    } else {
+      const { error } = await sb.rpc('update_dre_real_mensal', {
+        p_obra_id: state.id,
+        p_real_mensal: state.real_mensal,
+      });
+      if (error) return toast('Erro ao salvar: ' + error.message, 'error');
+    }
+    toast('Salvo com sucesso', 'success');
+    await loadObras();
+  }
+
+  function syncHeaderInputs() {
+    if (!isAdmin) return;
+    state.contrato = document.getElementById('headerContract').value.trim();
+    const parsedVal = parseNum(document.getElementById('headerValue').value);
+    if (parsedVal) state.valor_contrato = parsedVal;
+    state.atualizado_em = document.getElementById('headerUpdated').value.trim();
+    state.nome = 'OBRA ' + (state.contrato || 'SEM NOME').replace(/^OBRA\s+/i, '');
+  }
+
+  function switchObra(idx) {
+    if (idx === currentIdx || idx < 0 || idx >= obras.length) return;
+    currentIdx = idx;
+    state = obras[currentIdx];
+    render();
+  }
+
+  function newObra() {
+    if (!isAdmin) return;
+    const dlg = document.getElementById('obraDialog');
+    document.getElementById('obraDialogTitle').textContent = 'Nova Obra';
+    document.getElementById('dlgObraName').value = '';
+    document.getElementById('dlgObraValue').value = '';
+    const btn = document.getElementById('obraDialogConfirm');
+    btn.onclick = async () => {
+      const name = document.getElementById('dlgObraName').value.trim();
+      if (!name) return toast('Preencha o nome', 'error');
+      const val = parseNum(document.getElementById('dlgObraValue').value) || 0;
+      const { data: { user } } = await sb.auth.getUser();
+      const today = new Date();
+      const mesAtual = PT_MONTHS[today.getMonth()] + '/' + String(today.getFullYear()).slice(2);
+      const { error } = await sb.from('dre_obras').insert({
+        nome: 'OBRA ' + upper(name).replace(/^OBRA\s+/i, ''),
+        contrato: upper(name).replace(/^OBRA\s+/i, ''),
+        valor_contrato: val,
+        atualizado_em: today.toLocaleDateString('pt-BR'),
+        meses: [mesAtual],
+        orcado_mensal: [null],
+        real_mensal: [null],
+        created_by: user.id,
+      });
+      if (error) return toast('Erro: ' + error.message, 'error');
+      dlg.close();
+      toast('Obra criada', 'success');
+      await loadObras();
+      currentIdx = obras.length - 1;
+      state = obras[currentIdx];
+      render();
+    };
+    dlg.showModal();
+    document.getElementById('dlgObraName').focus();
+  }
+
+  function editObra() {
+    if (!isAdmin || !state || !state.id) return;
+    const dlg = document.getElementById('obraDialog');
+    document.getElementById('obraDialogTitle').textContent = 'Editar Obra';
+    document.getElementById('dlgObraName').value = (state.contrato || '').replace(/^OBRA\s+/i, '');
+    document.getElementById('dlgObraValue').value = money(state.valor_contrato);
+    const btn = document.getElementById('obraDialogConfirm');
+    btn.onclick = async () => {
+      const name = document.getElementById('dlgObraName').value.trim();
+      if (!name) return toast('Preencha o nome', 'error');
+      const val = parseNum(document.getElementById('dlgObraValue').value);
+      state.nome = 'OBRA ' + upper(name).replace(/^OBRA\s+/i, '');
+      state.contrato = upper(name).replace(/^OBRA\s+/i, '');
+      if (val) state.valor_contrato = val;
+      dlg.close();
+      render();
+      toast('Dados atualizados localmente. Clique Salvar para persistir.', 'info');
+    };
+    dlg.showModal();
+  }
+
+  async function duplicateObra() {
+    if (!isAdmin || !state || !state.id) return;
+    const { data: { user } } = await sb.auth.getUser();
+    const { error } = await sb.from('dre_obras').insert({
+      nome: state.nome + ' - CÓPIA',
+      contrato: (state.contrato || '') + ' - CÓPIA',
+      valor_contrato: state.valor_contrato,
+      atualizado_em: state.atualizado_em,
+      meses: state.meses,
+      orcado_mensal: state.orcado_mensal,
+      real_mensal: state.real_mensal,
+      created_by: user.id,
+    });
+    if (error) return toast('Erro: ' + error.message, 'error');
+    toast('Obra duplicada', 'success');
+    await loadObras();
+    currentIdx = obras.length - 1;
+    state = obras[currentIdx];
+    render();
+  }
+
+  async function deleteObra() {
+    if (!isAdmin || !state || !state.id) return;
+    if (obras.length <= 1) return toast('Mantenha ao menos uma obra', 'error');
+    const ok = await showConfirm('Excluir Obra', `Deseja excluir "${state.nome}"?`);
+    if (!ok) return;
+    const { error } = await sb.from('dre_obras').delete().eq('id', state.id);
+    if (error) return toast('Erro: ' + error.message, 'error');
+    toast('Obra excluída', 'info');
+    await loadObras();
+    currentIdx = 0;
+    state = obras[0];
+    render();
+  }
+
+  function addMonth() {
+    if (!isAdmin || !state) return;
+    state.meses.push(nextMonth(state.meses));
+    state.orcado_mensal.push(null);
+    state.real_mensal.push(null);
+    render();
+    toast('Mês adicionado. Salve para persistir.', 'info');
+  }
+
+  function addPreviousMonth() {
+    if (!isAdmin || !state) return;
+    state.meses.unshift(prevMonth(state.meses));
+    state.orcado_mensal.unshift(null);
+    state.real_mensal.unshift(null);
+    render();
+    toast('Mês adicionado no início. Salve para persistir.', 'info');
+  }
+
+  async function removeMonth() {
+    if (!isAdmin || !state || state.meses.length <= 1) return toast('Mantenha ao menos um mês', 'error');
+    const ok = await showConfirm('Remover Mês', 'Remover o último mês?');
+    if (!ok) return;
+    state.meses.pop(); state.orcado_mensal.pop(); state.real_mensal.pop();
+    render();
+    toast('Mês removido. Salve para persistir.', 'info');
+  }
+
+  function exportCsv() {
+    if (!state) return;
+    const m = metrics(); const trend = trendValues();
+    const rows = [['Mes','Orcado Mensal','Real Mensal','Orcado Acum','Real Acum','Tendencia']];
+    state.meses.forEach((mo, i) => rows.push([mo, state.orcado_mensal[i] ?? '', state.real_mensal[i] ?? '', m.pa[i] ?? '', m.ra[i] ?? '', trend[i] ?? '']));
+    const name = String(state.nome || 'dre').replace(/[\\/:*?"<>|]+/g, '-').trim();
+    const blob = new Blob([rows.map(r => r.join(';')).join('\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${name}.csv`; a.click();
+    URL.revokeObjectURL(a.href);
+    toast('CSV exportado', 'success');
+  }
+
+  function printPdf() {
+    if (!state) return;
+    drawMonthly();
+    setTimeout(() => window.print(), 200);
+  }
+
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('sidebarOverlay').classList.toggle('open');
+  }
+
+  // ═══ INIT ═══
+  (async () => {
+    document.getElementById('loginBtn').addEventListener('click', login);
+    document.getElementById('loginPassword').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+    document.getElementById('loginEmail').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('loginPassword').focus(); });
+
+    ['headerContract', 'headerValue', 'headerUpdated'].forEach(id => {
+      document.getElementById(id).addEventListener('blur', () => { if (isAdmin) { syncHeaderInputs(); render(); } });
+      document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } });
+    });
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.screen).classList.add('active');
+        requestAnimationFrame(() => { drawMonthly(); drawCurve(); });
+      });
+    });
+
+    window.addEventListener('resize', () => requestAnimationFrame(() => { drawMonthly(); drawCurve(); }));
+
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) await initApp();
+  })();
+
+  return { save, newObra, editObra, duplicateObra, deleteObra, addMonth, addPreviousMonth, removeMonth, exportCsv, printPdf, toggleSidebar, logout };
+})();
+</script>
+</body>
+</html>
