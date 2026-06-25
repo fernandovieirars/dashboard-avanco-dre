@@ -1538,12 +1538,17 @@ const App = (() => {
   function prepCanvas(canvas) {
     const ctx = canvas.getContext('2d');
     const r = Math.max(2, window.devicePixelRatio || 1);
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = Math.max(1, Math.floor(rect.width * r));
-    canvas.height = Math.max(1, Math.floor(rect.height * r));
+    let rect = canvas.getBoundingClientRect();
+    let cw = rect.width, ch = rect.height;
+    if (cw < 10 || ch < 10) {
+      cw = canvas.parentElement ? canvas.parentElement.offsetWidth || 900 : 900;
+      ch = parseInt(canvas.style.height) || 260;
+    }
+    canvas.width = Math.max(1, Math.floor(cw * r));
+    canvas.height = Math.max(1, Math.floor(ch * r));
     ctx.setTransform(r, 0, 0, r, 0, 0);
-    ctx.clearRect(0, 0, rect.width, rect.height);
-    return { ctx, w: rect.width, h: rect.height };
+    ctx.clearRect(0, 0, cw, ch);
+    return { ctx, w: cw, h: ch };
   }
 
   function roundRect(ctx, x, y, w, h, rad) {
@@ -1555,9 +1560,9 @@ const App = (() => {
     ctx.quadraticCurveTo(x, y, x + rad, y); ctx.closePath();
   }
 
-  function drawMonthly() {
+  function drawMonthly(force) {
     const canvas = document.getElementById('monthlyChart');
-    if (!canvas || !canvas.offsetParent || !state.meses || !state.meses.length) return;
+    if (!canvas || (!force && !canvas.offsetParent) || !state.meses || !state.meses.length) return;
     const { ctx, w, h } = prepCanvas(canvas);
     const pad = { left: 100, right: 30, top: 30, bottom: 60 };
     const pw = w - pad.left - pad.right, ph = h - pad.top - pad.bottom;
@@ -1607,9 +1612,9 @@ const App = (() => {
     ctx.fillStyle = '#fff'; ctx.fillText('Real', lx + 96, h - 7);
   }
 
-  function drawCurve() {
+  function drawCurve(force) {
     const canvas = document.getElementById('curveChart');
-    if (!canvas || !canvas.offsetParent || !state.meses || !state.meses.length) return;
+    if (!canvas || (!force && !canvas.offsetParent) || !state.meses || !state.meses.length) return;
     const { ctx, w, h } = prepCanvas(canvas);
     const m = metrics(); const trend = trendValues();
     const planned = m.pa.map(v => v == null || !m.cv ? null : v / m.cv);
@@ -1863,7 +1868,28 @@ const App = (() => {
     });
 
     window.addEventListener('resize', () => requestAnimationFrame(() => { drawMonthly(); drawCurve(); }));
-    window.addEventListener('beforeprint', () => { renderCurveTable(); drawMonthly(); drawCurve(); });
+    window.addEventListener('beforeprint', () => {
+      document.querySelectorAll('.screen').forEach(s => s.style.display = 'block');
+      const cl = document.querySelector('.curve-layout');
+      if (cl) cl.style.display = 'block';
+      const mc = document.getElementById('monthlyChart');
+      if (mc) { mc.style.width = '100%'; mc.style.height = '220px'; }
+      const cc = document.getElementById('curveChart');
+      if (cc) { cc.style.width = '100%'; cc.style.height = '260px'; }
+      renderCurveTable();
+      drawMonthly(true);
+      drawCurve(true);
+    });
+    window.addEventListener('afterprint', () => {
+      document.querySelectorAll('.screen').forEach(s => s.style.display = '');
+      const cl = document.querySelector('.curve-layout');
+      if (cl) cl.style.display = '';
+      ['monthlyChart','curveChart'].forEach(id => {
+        const c = document.getElementById(id);
+        if (c) { c.style.width = ''; c.style.height = ''; }
+      });
+      requestAnimationFrame(() => { drawMonthly(); drawCurve(); });
+    });
 
     const { data: { session } } = await sb.auth.getSession();
     if (session) await initApp();
