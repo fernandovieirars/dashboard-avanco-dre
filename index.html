@@ -1067,6 +1067,10 @@ dialog::backdrop {
           <div class="indicator-card"><div class="indicator-label">Desvio em p.p.</div><div class="indicator-value" id="indDeviationPp">—</div></div>
           <div class="indicator-card"><div class="indicator-label">Meses Realizados</div><div class="indicator-value" id="indRealMonths">—</div></div>
           <div class="indicator-card"><div class="indicator-label">Tendência Final</div><div class="indicator-value" id="indTrend">—</div></div>
+          <div class="indicator-card"><div class="indicator-label">IDP (Índice Prazo)</div><div class="indicator-value" id="indIDP">—</div></div>
+          <div class="indicator-card"><div class="indicator-label">Desvio Mensal</div><div class="indicator-value" id="indDevMonth">—</div></div>
+          <div class="indicator-card"><div class="indicator-label">Velocidade Média</div><div class="indicator-value" id="indAvgSpeed">—</div></div>
+          <div class="indicator-card"><div class="indicator-label">Previsão Término</div><div class="indicator-value" id="indEstEnd">—</div></div>
         </div>
 
         <div class="table-card">
@@ -1394,6 +1398,45 @@ const App = (() => {
     document.getElementById('indDeviationPp').textContent = devPp == null ? '—' : devPp.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' p.p.';
     document.getElementById('indRealMonths').textContent = `${realizedCount} de ${state.meses.length}`;
     document.getElementById('indTrend').textContent = pct(finalTrend);
+
+    const idp = rFinal != null && m.pAt != null && m.pAt > 0 ? rFinal / m.pAt : null;
+    const idpEl = document.getElementById('indIDP');
+    if (idp == null) { idpEl.textContent = '—'; }
+    else {
+      idpEl.textContent = idp.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+      idpEl.style.color = idp >= 1 ? 'var(--green)' : idp >= 0.95 ? 'var(--primary)' : 'var(--red)';
+    }
+
+    const devMonth = realMonth != null && plannedMonth != null ? realMonth - plannedMonth : null;
+    const devMonthEl = document.getElementById('indDevMonth');
+    if (devMonth == null) { devMonthEl.textContent = '—'; }
+    else {
+      devMonthEl.textContent = money(devMonth);
+      const dms = devStatus(devMonth);
+      devMonthEl.style.color = dms.cls === 'positive' ? 'var(--green)' : dms.cls === 'negative' ? 'var(--red)' : '';
+    }
+
+    const avgSpeed = realizedCount > 0 && rFinal != null ? rFinal / realizedCount : null;
+    document.getElementById('indAvgSpeed').textContent = avgSpeed != null ? compactMoney(avgSpeed) + '/mês' : '—';
+
+    if (avgSpeed != null && avgSpeed > 0 && m.cv > 0 && rFinal != null) {
+      const remaining = m.cv - rFinal;
+      const monthsLeft = Math.ceil(remaining / avgSpeed);
+      const lastRealMonth = state.meses[m.idx];
+      const match = String(lastRealMonth).toLowerCase().match(/^([a-zç]{3})\/(\d{2})$/);
+      if (match && monthsLeft > 0) {
+        let mi = PT_MONTHS.indexOf(match[1]);
+        let yr = Number(match[2]);
+        for (let i = 0; i < monthsLeft; i++) { mi++; if (mi >= 12) { mi = 0; yr++; } }
+        document.getElementById('indEstEnd').textContent = `${PT_MONTHS[mi]}/${String(yr).padStart(2,'0')}`;
+      } else if (monthsLeft <= 0) {
+        document.getElementById('indEstEnd').textContent = 'Concluída';
+      } else {
+        document.getElementById('indEstEnd').textContent = '—';
+      }
+    } else {
+      document.getElementById('indEstEnd').textContent = '—';
+    }
   }
 
   function editableCell(value, type, index) {
