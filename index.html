@@ -919,20 +919,20 @@ dialog::backdrop {
   .report { min-width: 0 !important; font-size: 9px; }
   .report th, .report td { padding: 3px 5px; height: auto; }
   .report th { font-size: 8px; }
-  .chart-card { page-break-inside: avoid; break-inside: avoid; margin-bottom: 10px; page-break-before: auto; }
-  .chart-card-header { padding: 6px 10px; font-size: 12px; }
-  .chart-container { padding: 8px; }
-  .chart-container canvas { height: 220px !important; }
+  .chart-card { page-break-before: always; break-inside: avoid; margin-bottom: 10px; box-shadow: none; border: 1px solid #ccc; }
+  .chart-card-header { padding: 8px 12px; font-size: 13px; font-weight: 700; }
+  .chart-container { padding: 12px; background: #fff !important; }
+  .chart-container canvas { height: 320px !important; }
   .curve-layout { display: block !important; page-break-before: always; }
-  .curve-table-card { box-shadow: none; border: 1px solid #ccc; margin-bottom: 10px; page-break-inside: avoid; break-inside: avoid; }
-  .curve-table-card h2 { font-size: 12px; padding: 6px 10px; }
+  .curve-table-card { box-shadow: none; border: 1px solid #ccc; margin-bottom: 12px; page-break-inside: avoid; break-inside: avoid; }
+  .curve-table-card h2 { font-size: 13px; padding: 8px 12px; }
   .curve-table { font-size: 9px; }
-  .curve-table th { padding: 4px 6px; font-size: 8px; }
-  .curve-table td { padding: 3px 6px; }
+  .curve-table th { padding: 5px 8px; font-size: 8px; }
+  .curve-table td { padding: 4px 8px; }
   .curve-chart-card { box-shadow: none; border: 1px solid #ccc; page-break-inside: avoid; break-inside: avoid; }
-  .curve-chart-card h2 { font-size: 12px; padding: 6px 10px; }
-  .curve-chart-body { padding: 8px; }
-  .curve-chart-body canvas { height: 260px !important; }
+  .curve-chart-card h2 { font-size: 13px; padding: 8px 12px; }
+  .curve-chart-body { padding: 12px; background: #fff !important; }
+  .curve-chart-body canvas { height: 320px !important; }
 }
 </style>
 </head>
@@ -1163,6 +1163,7 @@ const App = (() => {
   const PT_MONTHS = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
 
   let isAdmin = false;
+  let isPrinting = false;
   let profile = null;
   let obras = [];
   let currentIdx = 0;
@@ -1564,6 +1565,7 @@ const App = (() => {
     const canvas = document.getElementById('monthlyChart');
     if (!canvas || (!force && !canvas.offsetParent) || !state.meses || !state.meses.length) return;
     const { ctx, w, h } = prepCanvas(canvas);
+    const P = isPrinting;
     const pad = { left: 100, right: 30, top: 30, bottom: 60 };
     const pw = w - pad.left - pad.right, ph = h - pad.top - pad.bottom;
     const max = Math.max(1000, ...state.orcado_mensal.filter(Boolean), ...state.real_mensal.filter(Boolean)) * 1.18;
@@ -1571,27 +1573,30 @@ const App = (() => {
     const xg = i => pad.left + (i + .5) * (pw / state.meses.length);
     const bw = Math.min(32, pw / state.meses.length / 3.5);
 
+    if (P) { ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h); }
+
     ctx.font = '600 11px Segoe UI, system-ui';
-    ctx.strokeStyle = 'rgba(255,255,255,.08)'; ctx.fillStyle = 'rgba(255,255,255,.5)';
+    ctx.strokeStyle = P ? 'rgba(0,0,0,.1)' : 'rgba(255,255,255,.08)';
+    ctx.fillStyle = P ? '#64748b' : 'rgba(255,255,255,.5)';
     for (let p = 0; p <= 1; p += .25) {
       const yy = y(max * p);
       ctx.beginPath(); ctx.moveTo(pad.left, yy); ctx.lineTo(w - pad.right, yy); ctx.stroke();
       ctx.textAlign = 'right'; ctx.fillText(compactMoney(max * p), pad.left - 10, yy + 4);
     }
     const zero = y(0);
-    ctx.strokeStyle = 'rgba(255,255,255,.3)';
+    ctx.strokeStyle = P ? 'rgba(0,0,0,.25)' : 'rgba(255,255,255,.3)';
     ctx.beginPath(); ctx.moveTo(pad.left, zero); ctx.lineTo(w - pad.right, zero); ctx.stroke();
 
     state.meses.forEach((mo, i) => {
       const gx = xg(i);
-      ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.textAlign = 'center';
+      ctx.fillStyle = P ? '#334155' : 'rgba(255,255,255,.7)'; ctx.textAlign = 'center';
       ctx.font = '600 11px Segoe UI, system-ui'; ctx.fillText(mo, gx, h - 30);
       if (state.orcado_mensal[i] != null) {
         const grad = ctx.createLinearGradient(0, y(state.orcado_mensal[i]), 0, zero);
         grad.addColorStop(0, '#38bdf8'); grad.addColorStop(1, '#0284c7');
         ctx.fillStyle = grad;
         roundRect(ctx, gx - bw - 3, y(state.orcado_mensal[i]), bw, zero - y(state.orcado_mensal[i]), 3); ctx.fill();
-        ctx.fillStyle = '#fff'; ctx.font = '700 10px Segoe UI';
+        ctx.fillStyle = P ? '#0369a1' : '#fff'; ctx.font = '700 10px Segoe UI';
         ctx.fillText(compactMoney(state.orcado_mensal[i]), gx - bw/2 - 3, y(state.orcado_mensal[i]) - 8);
       }
       if (state.real_mensal[i] != null) {
@@ -1599,7 +1604,7 @@ const App = (() => {
         grad.addColorStop(0, '#fb923c'); grad.addColorStop(1, '#ea580c');
         ctx.fillStyle = grad;
         roundRect(ctx, gx + 3, y(state.real_mensal[i]), bw, zero - y(state.real_mensal[i]), 3); ctx.fill();
-        ctx.fillStyle = '#fff'; ctx.font = '700 10px Segoe UI';
+        ctx.fillStyle = P ? '#9a3412' : '#fff'; ctx.font = '700 10px Segoe UI';
         ctx.fillText(compactMoney(state.real_mensal[i]), gx + bw/2 + 3, y(state.real_mensal[i]) - 8);
       }
     });
@@ -1607,9 +1612,9 @@ const App = (() => {
     ctx.font = '600 11px Segoe UI';
     const lx = w / 2 - 70;
     ctx.fillStyle = '#0ea5e9'; roundRect(ctx, lx, h - 16, 10, 10, 2); ctx.fill();
-    ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.fillText('Previsto', lx + 14, h - 7);
+    ctx.fillStyle = P ? '#334155' : '#fff'; ctx.textAlign = 'left'; ctx.fillText('Previsto', lx + 14, h - 7);
     ctx.fillStyle = '#f97316'; roundRect(ctx, lx + 82, h - 16, 10, 10, 2); ctx.fill();
-    ctx.fillStyle = '#fff'; ctx.fillText('Real', lx + 96, h - 7);
+    ctx.fillStyle = P ? '#334155' : '#fff'; ctx.fillText('Real', lx + 96, h - 7);
   }
 
   function drawCurve(force) {
@@ -1869,18 +1874,20 @@ const App = (() => {
 
     window.addEventListener('resize', () => requestAnimationFrame(() => { drawMonthly(); drawCurve(); }));
     window.addEventListener('beforeprint', () => {
+      isPrinting = true;
       document.querySelectorAll('.screen').forEach(s => s.style.display = 'block');
       const cl = document.querySelector('.curve-layout');
       if (cl) cl.style.display = 'block';
       const mc = document.getElementById('monthlyChart');
-      if (mc) { mc.style.width = '100%'; mc.style.height = '220px'; }
+      if (mc) { mc.style.width = '100%'; mc.style.height = '320px'; }
       const cc = document.getElementById('curveChart');
-      if (cc) { cc.style.width = '100%'; cc.style.height = '260px'; }
+      if (cc) { cc.style.width = '100%'; cc.style.height = '320px'; }
       renderCurveTable();
       drawMonthly(true);
       drawCurve(true);
     });
     window.addEventListener('afterprint', () => {
+      isPrinting = false;
       document.querySelectorAll('.screen').forEach(s => s.style.display = '');
       const cl = document.querySelector('.curve-layout');
       if (cl) cl.style.display = '';
