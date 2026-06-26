@@ -845,6 +845,57 @@ dialog::backdrop {
 .role-badge.admin { background: rgba(234,179,8,.2); color: var(--primary); }
 .role-badge.viewer { background: rgba(100,116,139,.15); color: var(--text-secondary); }
 
+/* ═══ CUSTOS ═══ */
+.custos-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.custos-filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.custos-filters label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.custos-select {
+  width: auto;
+  min-width: 140px;
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.custos-charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.custos-cat-container {
+  min-height: 380px;
+}
+
+.custos-report { min-width: 600px; }
+.custos-report td { font-size: 12px; }
+.custos-report td.forn-cell { text-align: left; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.custos-report td.insumo-cell { text-align: left; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.custos-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
 /* ═══ MOBILE ═══ */
 .sidebar-toggle {
   display: none;
@@ -882,9 +933,10 @@ dialog::backdrop {
   .sidebar.open { left: 0; }
   .sidebar-overlay.open { display: block; }
   .sidebar-toggle { display: block; }
-  .kpi-grid, .indicator-grid { grid-template-columns: 1fr 1fr; }
+  .kpi-grid, .indicator-grid, .custos-kpi-grid { grid-template-columns: 1fr 1fr; }
   .obra-header { grid-template-columns: 1fr; }
   .curve-layout { grid-template-columns: 1fr; }
+  .custos-charts-grid { grid-template-columns: 1fr; }
   .content { padding: 16px; }
 }
 
@@ -933,6 +985,13 @@ dialog::backdrop {
   .curve-chart-card h2 { font-size: 13px; padding: 8px 12px; }
   .curve-chart-body { padding: 12px; background: #fff !important; }
   .curve-chart-body canvas { height: 320px !important; }
+  #custos { page-break-before: always; }
+  .custos-kpi-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 8px; }
+  .custos-filters { display: none; }
+  .custos-charts-grid { grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .custos-charts-grid .chart-card { box-shadow: none; border: 1px solid #ccc; }
+  .custos-charts-grid .chart-container { padding: 8px; background: #fff !important; }
+  .custos-charts-grid canvas { height: 280px !important; }
 }
 </style>
 </head>
@@ -1014,6 +1073,7 @@ dialog::backdrop {
       <div class="tab-group">
         <button class="tab-btn active" data-screen="painel">Painel</button>
         <button class="tab-btn" data-screen="curva">Curva S</button>
+        <button class="tab-btn" data-screen="custos">Custos</button>
       </div>
 
       <div class="topbar-spacer"></div>
@@ -1114,6 +1174,58 @@ dialog::backdrop {
           <div class="curve-chart-card">
             <h2>Curva S com Tendência</h2>
             <div class="curve-chart-body"><canvas id="curveChart"></canvas></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="custos" class="screen">
+        <div class="custos-kpi-grid">
+          <div class="kpi-card blue"><div class="kpi-label">Total Gasto</div><div class="kpi-value" id="custosTotal">—</div></div>
+          <div class="kpi-card green"><div class="kpi-label">N° Pedidos</div><div class="kpi-value" id="custosPedidos">—</div></div>
+          <div class="kpi-card yellow"><div class="kpi-label">Fornecedores</div><div class="kpi-value" id="custosFornecedores">—</div></div>
+          <div class="kpi-card orange"><div class="kpi-label">Custo Médio / Mês</div><div class="kpi-value" id="custosMedia">—</div></div>
+        </div>
+
+        <div class="custos-filters">
+          <label>Mês:</label>
+          <select id="custosFilterMes" class="form-input custos-select"><option value="">Todos</option></select>
+          <label>Categoria:</label>
+          <select id="custosFilterCat" class="form-input custos-select"><option value="">Todas</option></select>
+        </div>
+
+        <div class="custos-charts-grid">
+          <div class="chart-card">
+            <div class="chart-card-header">Custo Mensal</div>
+            <div class="chart-container"><canvas id="custosMensalChart"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-header">Custo por Categoria</div>
+            <div class="chart-container custos-cat-container"><canvas id="custosCatChart"></canvas></div>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-card-header">
+            <span class="table-card-title">Top 10 Fornecedores</span>
+          </div>
+          <div class="table-scroll">
+            <table class="report custos-report">
+              <thead><tr><th style="text-align:left">Fornecedor</th><th>Pedidos</th><th>Valor Total</th><th>%</th></tr></thead>
+              <tbody id="custosTopForn"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-card-header">
+            <span class="table-card-title">Detalhamento de Custos</span>
+            <span class="custos-count" id="custosRowCount"></span>
+          </div>
+          <div class="table-scroll">
+            <table class="report custos-report">
+              <thead><tr><th>Pedido</th><th>Data</th><th>Mês</th><th style="text-align:left">Fornecedor</th><th>Categoria</th><th style="text-align:left">Insumo</th><th>Qtd</th><th>Un</th><th>V. Unit.</th><th>V. Total</th></tr></thead>
+              <tbody id="custosDetalhe"></tbody>
+            </table>
           </div>
         </div>
       </section>
@@ -1706,7 +1818,10 @@ const App = (() => {
     if (idx === currentIdx || idx < 0 || idx >= obras.length) return;
     currentIdx = idx;
     state = obras[currentIdx];
+    custosLoaded = false;
+    custosData = [];
     render();
+    if (document.getElementById('custos').classList.contains('active')) loadCustos();
   }
 
   function newObra() {
@@ -1872,7 +1987,7 @@ const App = (() => {
       });
     });
 
-    window.addEventListener('resize', () => requestAnimationFrame(() => { drawMonthly(); drawCurve(); }));
+    window.addEventListener('resize', () => requestAnimationFrame(() => { drawMonthly(); drawCurve(); if (custosLoaded) { drawCustosMensal(filteredCustos()); drawCustosCat(filteredCustos()); } }));
     window.addEventListener('beforeprint', () => {
       isPrinting = true;
       document.querySelectorAll('.screen').forEach(s => s.style.display = 'block');
@@ -1885,6 +2000,7 @@ const App = (() => {
       renderCurveTable();
       drawMonthly(true);
       drawCurve(true);
+      if (custosLoaded) { drawCustosMensal(filteredCustos()); drawCustosCat(filteredCustos()); }
     });
     window.addEventListener('afterprint', () => {
       isPrinting = false;
@@ -1901,6 +2017,171 @@ const App = (() => {
     const { data: { session } } = await sb.auth.getSession();
     if (session) await initApp();
   })();
+
+  // ═══ CUSTOS ═══
+  let custosData = [];
+  let custosLoaded = false;
+
+  async function loadCustos() {
+    if (!state || !state.id) return;
+    const { data, error } = await sb.from('dre_custos').select('*').eq('obra_id', state.id).order('data_pedido', { ascending: true });
+    if (error) { toast('Erro ao carregar custos: ' + error.message, 'error'); return; }
+    custosData = data || [];
+    custosLoaded = true;
+    populateCustosFilters();
+    renderCustos();
+  }
+
+  function populateCustosFilters() {
+    const meses = [...new Set(custosData.map(r => r.mes_ref))];
+    const cats = [...new Set(custosData.map(r => r.categoria))].sort();
+    const selMes = document.getElementById('custosFilterMes');
+    const selCat = document.getElementById('custosFilterCat');
+    const curMes = selMes.value, curCat = selCat.value;
+    selMes.innerHTML = '<option value="">Todos</option>' + meses.map(m => `<option value="${m}">${m}</option>`).join('');
+    selCat.innerHTML = '<option value="">Todas</option>' + cats.map(c => `<option value="${c}">${c}</option>`).join('');
+    selMes.value = curMes; selCat.value = curCat;
+  }
+
+  function filteredCustos() {
+    const mes = document.getElementById('custosFilterMes').value;
+    const cat = document.getElementById('custosFilterCat').value;
+    return custosData.filter(r => (!mes || r.mes_ref === mes) && (!cat || r.categoria === cat));
+  }
+
+  function renderCustos() {
+    const rows = filteredCustos();
+    const total = rows.reduce((s, r) => s + (r.valor_total || 0), 0);
+    const pedidos = new Set(rows.map(r => r.pedido)).size;
+    const fornecedores = new Set(rows.map(r => r.fornecedor)).size;
+    const mesesSet = new Set(rows.map(r => r.mes_ref));
+
+    document.getElementById('custosTotal').textContent = compactMoney(total);
+    document.getElementById('custosPedidos').textContent = pedidos;
+    document.getElementById('custosFornecedores').textContent = fornecedores;
+    document.getElementById('custosMedia').textContent = mesesSet.size > 0 ? compactMoney(total / mesesSet.size) : '—';
+    document.getElementById('custosRowCount').textContent = `${rows.length} itens`;
+
+    renderCustosTopForn(rows, total);
+    renderCustosDetalhe(rows);
+    requestAnimationFrame(() => { drawCustosMensal(rows); drawCustosCat(rows); });
+  }
+
+  function renderCustosTopForn(rows, total) {
+    const map = {};
+    rows.forEach(r => {
+      if (!map[r.fornecedor]) map[r.fornecedor] = { val: 0, peds: new Set() };
+      map[r.fornecedor].val += r.valor_total || 0;
+      map[r.fornecedor].peds.add(r.pedido);
+    });
+    const sorted = Object.entries(map).sort((a, b) => b[1].val - a[1].val).slice(0, 10);
+    document.getElementById('custosTopForn').innerHTML = sorted.map(([f, d]) =>
+      `<tr><td class="forn-cell">${f}</td><td>${d.peds.size}</td><td>${money(d.val)}</td><td class="pct-cell">${total > 0 ? PCT.format(d.val / total * 100) + '%' : '—'}</td></tr>`
+    ).join('');
+  }
+
+  function renderCustosDetalhe(rows) {
+    const show = rows.slice(0, 200);
+    document.getElementById('custosDetalhe').innerHTML = show.map(r =>
+      `<tr><td>${r.pedido}</td><td>${r.data_pedido ? r.data_pedido.slice(8,10)+'/'+r.data_pedido.slice(5,7)+'/'+r.data_pedido.slice(2,4) : ''}</td><td>${r.mes_ref}</td><td class="forn-cell">${r.fornecedor || ''}</td><td>${r.categoria || ''}</td><td class="insumo-cell" title="${(r.insumo||'').replace(/"/g,'&quot;')}">${r.insumo || ''}</td><td>${r.quantidade ?? ''}</td><td>${r.unidade || ''}</td><td>${money(r.valor_unitario)}</td><td>${money(r.valor_total)}</td></tr>`
+    ).join('') + (rows.length > 200 ? `<tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:12px">… e mais ${rows.length - 200} itens</td></tr>` : '');
+  }
+
+  function drawCustosMensal(rows) {
+    const canvas = document.getElementById('custosMensalChart');
+    if (!canvas) return;
+    const { ctx, w, h } = prepCanvas(canvas);
+    const P = isPrinting;
+
+    const byMes = {};
+    rows.forEach(r => { byMes[r.mes_ref] = (byMes[r.mes_ref] || 0) + (r.valor_total || 0); });
+    const meses = Object.keys(byMes);
+    const vals = meses.map(m => byMes[m]);
+    if (!meses.length) return;
+
+    const pad = { left: 100, right: 30, top: 30, bottom: 60 };
+    const pw = w - pad.left - pad.right, ph = h - pad.top - pad.bottom;
+    const max = Math.max(1000, ...vals) * 1.18;
+    const yPos = v => pad.top + (max - v) / max * ph;
+    const xg = i => pad.left + (i + .5) * (pw / meses.length);
+    const bw = Math.min(48, pw / meses.length / 2);
+
+    if (P) { ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h); }
+
+    ctx.font = '600 11px Segoe UI, system-ui';
+    ctx.strokeStyle = P ? 'rgba(0,0,0,.1)' : 'rgba(255,255,255,.08)';
+    ctx.fillStyle = P ? '#64748b' : 'rgba(255,255,255,.5)';
+    for (let p = 0; p <= 1; p += .25) {
+      const yy = yPos(max * p);
+      ctx.beginPath(); ctx.moveTo(pad.left, yy); ctx.lineTo(w - pad.right, yy); ctx.stroke();
+      ctx.textAlign = 'right'; ctx.fillText(compactMoney(max * p), pad.left - 10, yy + 4);
+    }
+
+    const zero = yPos(0);
+    const colors = ['#0ea5e9','#22c55e','#f97316','#eab308','#a855f7','#ec4899','#14b8a6','#f43f5e','#6366f1','#84cc16','#06b6d4','#e11d48'];
+
+    meses.forEach((mo, i) => {
+      const gx = xg(i);
+      ctx.fillStyle = P ? '#334155' : 'rgba(255,255,255,.7)';
+      ctx.textAlign = 'center'; ctx.font = '600 11px Segoe UI';
+      ctx.fillText(mo, gx, h - 30);
+      const grad = ctx.createLinearGradient(0, yPos(vals[i]), 0, zero);
+      const c = colors[i % colors.length];
+      grad.addColorStop(0, c); grad.addColorStop(1, c + '99');
+      ctx.fillStyle = grad;
+      roundRect(ctx, gx - bw / 2, yPos(vals[i]), bw, zero - yPos(vals[i]), 3); ctx.fill();
+      ctx.fillStyle = P ? '#0f172a' : '#fff'; ctx.font = '700 10px Segoe UI';
+      ctx.fillText(compactMoney(vals[i]), gx, yPos(vals[i]) - 8);
+    });
+  }
+
+  function drawCustosCat(rows) {
+    const canvas = document.getElementById('custosCatChart');
+    if (!canvas) return;
+    const { ctx, w, h } = prepCanvas(canvas);
+    const P = isPrinting;
+
+    const byCat = {};
+    rows.forEach(r => { byCat[r.categoria || 'Outros'] = (byCat[r.categoria || 'Outros'] || 0) + (r.valor_total || 0); });
+    const sorted = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
+    if (!sorted.length) return;
+
+    const total = sorted.reduce((s, e) => s + e[1], 0);
+    const colors = ['#0ea5e9','#22c55e','#f97316','#eab308','#a855f7','#ec4899','#14b8a6','#f43f5e','#6366f1','#84cc16','#06b6d4','#e11d48','#78716c'];
+    const pad = { left: 180, right: 80, top: 24, bottom: 16 };
+    const barH = Math.min(28, (h - pad.top - pad.bottom) / sorted.length - 4);
+    const maxVal = sorted[0][1];
+    const pw = w - pad.left - pad.right;
+
+    if (P) { ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h); }
+
+    sorted.forEach(([cat, val], i) => {
+      const yy = pad.top + i * (barH + 6);
+      const bw = Math.max(4, val / maxVal * pw);
+      ctx.fillStyle = P ? '#334155' : 'rgba(255,255,255,.8)';
+      ctx.textAlign = 'right'; ctx.font = '600 11px Segoe UI';
+      ctx.fillText(cat, pad.left - 8, yy + barH / 2 + 4);
+      ctx.fillStyle = colors[i % colors.length];
+      roundRect(ctx, pad.left, yy, bw, barH, 3); ctx.fill();
+      ctx.fillStyle = P ? '#0f172a' : '#fff'; ctx.font = '700 10px Segoe UI';
+      ctx.textAlign = 'left';
+      const label = compactMoney(val) + ' (' + PCT.format(val / total * 100) + '%)';
+      ctx.fillText(label, pad.left + bw + 6, yy + barH / 2 + 4);
+    });
+  }
+
+  // Wire up custos filters
+  document.getElementById('custosFilterMes').addEventListener('change', () => renderCustos());
+  document.getElementById('custosFilterCat').addEventListener('change', () => renderCustos());
+
+  // Override tab switching to load custos on first visit
+  const origTabHandler = () => {};
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.screen === 'custos' && !custosLoaded) loadCustos();
+      if (btn.dataset.screen === 'custos' && custosLoaded) requestAnimationFrame(() => { drawCustosMensal(filteredCustos()); drawCustosCat(filteredCustos()); });
+    });
+  });
 
   return { save, newObra, editObra, duplicateObra, deleteObra, addMonth, addPreviousMonth, removeMonth, exportCsv, printPdf, toggleSidebar, logout };
 })();
