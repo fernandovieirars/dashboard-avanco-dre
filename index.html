@@ -1250,6 +1250,15 @@ dialog::backdrop {
           <select id="custosFilterMes" class="form-input custos-select"><option value="">Todos</option></select>
           <label>Categoria:</label>
           <select id="custosFilterCat" class="form-input custos-select"><option value="">Todas</option></select>
+          <div style="flex:1"></div>
+          <button class="btn btn-primary admin-only" onclick="App.openImportCustos()">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Importar CSV
+          </button>
+          <button class="btn btn-sm btn-ghost admin-only" onclick="App.downloadTemplateCsv()" title="Baixar modelo CSV">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Modelo
+          </button>
         </div>
 
         <div class="custos-charts-grid">
@@ -1317,6 +1326,50 @@ dialog::backdrop {
   <div class="dialog-footer">
     <button class="btn" id="confirmCancel">Cancelar</button>
     <button class="btn btn-danger" id="confirmOk">Confirmar</button>
+  </div>
+</dialog>
+
+<dialog id="importDialog" style="max-width:720px">
+  <div class="dialog-header">Importar Custos (CSV)</div>
+  <div class="dialog-body">
+    <div class="form-group">
+      <label>Arquivo CSV (separador ; ou ,)</label>
+      <input type="file" accept=".csv,.txt" id="importFile" class="form-input" style="padding:6px">
+    </div>
+    <div style="display:flex;gap:12px">
+      <div class="form-group" style="flex:1">
+        <label>Tipo de Custo</label>
+        <select id="importTipo" class="form-input">
+          <option value="Material">Material</option>
+          <option value="Mao de Obra">Mão de Obra</option>
+        </select>
+      </div>
+      <div class="form-group" style="flex:1">
+        <label>Categoria (se não houver coluna)</label>
+        <select id="importCatDefault" class="form-input">
+          <option value="">Auto-detectar</option>
+          <option value="Aco/Ferro">Aço/Ferro</option>
+          <option value="Concreto/Agregados">Concreto/Agregados</option>
+          <option value="Combustivel">Combustível</option>
+          <option value="Eletrica">Elétrica</option>
+          <option value="Hidraulica">Hidráulica</option>
+          <option value="Madeira">Madeira</option>
+          <option value="EPI/Seguranca">EPI/Segurança</option>
+          <option value="Equipamento/Locacao">Equipamento/Locação</option>
+          <option value="Alvenaria">Alvenaria</option>
+          <option value="Alimentacao">Alimentação</option>
+          <option value="Impermeabilizacao">Impermeabilização</option>
+          <option value="Ferramentas">Ferramentas</option>
+          <option value="Outros">Outros</option>
+        </select>
+      </div>
+    </div>
+    <div id="importPreview" style="max-height:260px;overflow:auto;font-size:12px;border:1px solid var(--border);border-radius:var(--radius);display:none"></div>
+    <div id="importStatus" style="margin-top:8px;font-size:13px;font-weight:600;color:var(--text-secondary)"></div>
+  </div>
+  <div class="dialog-footer">
+    <button class="btn" onclick="document.getElementById('importDialog').close()">Cancelar</button>
+    <button class="btn btn-primary" id="importConfirmBtn" disabled onclick="App.doImportCustos()">Importar</button>
   </div>
 </dialog>
 
@@ -2388,7 +2441,183 @@ const App = (() => {
     });
   });
 
-  return { save, newObra, editObra, duplicateObra, deleteObra, addMonth, addPreviousMonth, removeMonth, exportCsv, printPdf, toggleSidebar, logout, toggleCost };
+  // ═══ CSV IMPORT ═══
+  let importRows = [];
+
+  const COL_MAP = {
+    pedido: ['pedido','numero','nro','num','n°','nº'],
+    data_pedido: ['data','data pedido','data_pedido','dt pedido','dt'],
+    fornecedor: ['fornecedor','razao social','razão social','fornec'],
+    insumo: ['insumo','descricao','descrição','item','produto','material','descr'],
+    quantidade: ['quantidade','qtd','qtde','quant'],
+    unidade: ['unidade','un','und','uom'],
+    valor_unitario: ['valor unitario','valor_unitario','v.unit','v unit','preco','preço','unitario','unitário'],
+    valor_total: ['valor total','valor_total','v.total','v total','total','valor'],
+    categoria: ['categoria','grupo','cat','tipo material'],
+    mes_ref: ['mes','mês','mes_ref','competencia','competência','periodo','período'],
+  };
+
+  function mapColumns(headers) {
+    const map = {};
+    const norm = headers.map(h => h.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim());
+    for (const [field, aliases] of Object.entries(COL_MAP)) {
+      const idx = norm.findIndex(h => aliases.some(a => h === a || h.includes(a)));
+      if (idx >= 0) map[field] = idx;
+    }
+    return map;
+  }
+
+  function parseDate(s) {
+    if (!s) return null;
+    s = s.trim();
+    let m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+    m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+    m = s.match(/^(\d{2})\/(\d{2})\/(\d{2})$/);
+    if (m) return `20${m[3]}-${m[2]}-${m[1]}`;
+    return null;
+  }
+
+  function parseCsvNum(s) {
+    if (!s) return 0;
+    s = s.trim().replace(/[R$\s]/g,'');
+    if (s.includes(',') && s.includes('.')) {
+      if (s.lastIndexOf(',') > s.lastIndexOf('.')) s = s.replace(/\./g,'').replace(',','.');
+      else s = s.replace(/,/g,'');
+    } else if (s.includes(',')) {
+      s = s.replace(',','.');
+    }
+    const n = Number(s);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function mesRefFromDate(isoDate) {
+    if (!isoDate) return null;
+    const [y, m] = isoDate.split('-');
+    return m + '/' + y.slice(2);
+  }
+
+  function openImportCustos() {
+    if (!isAdmin) return;
+    importRows = [];
+    document.getElementById('importFile').value = '';
+    document.getElementById('importPreview').style.display = 'none';
+    document.getElementById('importPreview').innerHTML = '';
+    document.getElementById('importStatus').textContent = '';
+    document.getElementById('importConfirmBtn').disabled = true;
+    document.getElementById('importDialog').showModal();
+  }
+
+  document.getElementById('importFile').addEventListener('change', function() {
+    const file = this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      let text = e.target.result.replace(/^﻿/, '');
+      const delim = (text.match(/;/g) || []).length > (text.match(/,/g) || []).length ? ';' : ',';
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      if (lines.length < 2) { document.getElementById('importStatus').textContent = 'Arquivo vazio ou sem dados'; return; }
+
+      const headers = lines[0].split(delim).map(h => h.replace(/^"|"$/g,'').trim());
+      const colMap = mapColumns(headers);
+
+      if (colMap.valor_total == null && colMap.valor_unitario == null) {
+        document.getElementById('importStatus').textContent = 'Não encontrei coluna de valor. Colunas: ' + headers.join(', ');
+        return;
+      }
+
+      const catDefault = document.getElementById('importCatDefault').value;
+      const tipo = document.getElementById('importTipo').value;
+      importRows = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const vals = lines[i].split(delim).map(v => v.replace(/^"|"$/g,'').trim());
+        if (vals.length < 2) continue;
+        const get = f => colMap[f] != null ? vals[colMap[f]] || '' : '';
+
+        const data = parseDate(get('data_pedido'));
+        const qty = parseCsvNum(get('quantidade')) || 1;
+        const vu = parseCsvNum(get('valor_unitario'));
+        let vt = parseCsvNum(get('valor_total'));
+        if (!vt && vu) vt = vu * qty;
+        if (!vt) continue;
+
+        const mr = get('mes_ref') || mesRefFromDate(data);
+
+        importRows.push({
+          obra_id: state.id,
+          pedido: get('pedido') || '',
+          data_pedido: data,
+          mes_ref: mr,
+          fornecedor: get('fornecedor').substring(0, 120),
+          categoria: get('categoria') || catDefault || 'Outros',
+          insumo: get('insumo').substring(0, 120) || 'Item',
+          quantidade: qty,
+          unidade: get('unidade') || 'vb',
+          valor_unitario: vu || Math.round(vt / qty * 100) / 100,
+          valor_total: Math.round(vt * 100) / 100,
+          tipo: tipo,
+        });
+      }
+
+      if (!importRows.length) {
+        document.getElementById('importStatus').textContent = 'Nenhuma linha válida encontrada.';
+        return;
+      }
+
+      const prev = document.getElementById('importPreview');
+      const totalVal = importRows.reduce((s, r) => s + r.valor_total, 0);
+      prev.innerHTML = `<table class="report" style="min-width:auto;font-size:11px">
+        <thead><tr><th>Pedido</th><th>Data</th><th>Mês</th><th style="text-align:left">Fornecedor</th><th style="text-align:left">Insumo</th><th>Valor</th></tr></thead>
+        <tbody>${importRows.slice(0, 50).map(r => `<tr>
+          <td>${r.pedido}</td><td>${r.data_pedido || ''}</td><td>${r.mes_ref || ''}</td>
+          <td style="text-align:left;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.fornecedor}</td>
+          <td style="text-align:left;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.insumo}</td>
+          <td>${money(r.valor_total)}</td>
+        </tr>`).join('')}${importRows.length > 50 ? `<tr><td colspan="6" style="text-align:center;color:var(--text-muted)">… e mais ${importRows.length - 50} linhas</td></tr>` : ''}</tbody></table>`;
+      prev.style.display = 'block';
+      document.getElementById('importStatus').textContent = `${importRows.length} itens | Total: ${money(totalVal)} | Tipo: ${tipo}`;
+      document.getElementById('importConfirmBtn').disabled = false;
+    };
+    reader.readAsText(file, 'UTF-8');
+  });
+
+  async function doImportCustos() {
+    if (!importRows.length || !state.id) return;
+    const btn = document.getElementById('importConfirmBtn');
+    btn.disabled = true; btn.innerHTML = '<span class="loading-spinner"></span> Importando...';
+
+    let inserted = 0;
+    const BATCH = 100;
+    for (let i = 0; i < importRows.length; i += BATCH) {
+      const batch = importRows.slice(i, i + BATCH);
+      const { error } = await sb.from('dre_custos').insert(batch);
+      if (error) {
+        toast('Erro no lote ' + Math.floor(i / BATCH) + ': ' + error.message, 'error');
+        btn.textContent = 'Importar'; btn.disabled = false;
+        return;
+      }
+      inserted += batch.length;
+    }
+
+    document.getElementById('importDialog').close();
+    toast(`${inserted} itens importados com sucesso`, 'success');
+    custosLoaded = false;
+    custosPainel = null;
+    await loadCustosPainel();
+    if (document.getElementById('custos').classList.contains('active')) renderCustos();
+  }
+
+  function downloadTemplateCsv() {
+    const header = 'pedido;data;fornecedor;insumo;categoria;quantidade;unidade;valor_unitario;valor_total';
+    const example = '12345;01/06/2026;FORNECEDOR EXEMPLO LTDA;CIMENTO CP III 50KG;Concreto/Agregados;10;sc50kg;42.50;425.00';
+    const blob = new Blob([header + '\n' + example + '\n'], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'modelo_custos.csv'; a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  return { save, newObra, editObra, duplicateObra, deleteObra, addMonth, addPreviousMonth, removeMonth, exportCsv, printPdf, toggleSidebar, logout, toggleCost, openImportCustos, doImportCustos, downloadTemplateCsv };
 })();
 </script>
 </body>
