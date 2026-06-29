@@ -845,6 +845,56 @@ dialog::backdrop {
 .role-badge.admin { background: rgba(234,179,8,.2); color: var(--primary); }
 .role-badge.viewer { background: rgba(100,116,139,.15); color: var(--text-secondary); }
 
+/* ═══ COST TOGGLES ═══ */
+.cost-toggles {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-right: 8px;
+}
+
+.cost-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 20px;
+  background: var(--surface);
+  font-size: 11px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--transition);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.cost-toggle .toggle-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transition: all var(--transition);
+}
+
+.cost-toggle.mat .toggle-dot { background: var(--text-muted); }
+.cost-toggle.mo .toggle-dot { background: var(--text-muted); }
+
+.cost-toggle.active { border-color: transparent; color: #fff; }
+.cost-toggle.mat.active { background: #8b5cf6; border-color: #8b5cf6; }
+.cost-toggle.mat.active .toggle-dot { background: #fff; }
+.cost-toggle.mo.active { background: #ec4899; border-color: #ec4899; }
+.cost-toggle.mo.active .toggle-dot { background: #fff; }
+
+.cost-toggle:hover:not(.active) { border-color: var(--text-secondary); color: var(--text-secondary); }
+
+.report .cost-row td { background: #faf5ff; }
+.report .cost-row.mo-row td { background: #fdf2f8; }
+.report .cost-row .row-label { font-size: 11px; }
+.report .cost-row .row-label.mat-label { color: #8b5cf6; }
+.report .cost-row .row-label.mo-label { color: #ec4899; }
+.report .cost-row .row-label.total-label { color: var(--text); }
+
 /* ═══ CUSTOS ═══ */
 .custos-kpi-grid {
   display: grid;
@@ -1076,6 +1126,15 @@ dialog::backdrop {
         <button class="tab-btn" data-screen="custos">Custos</button>
       </div>
 
+      <div class="cost-toggles">
+        <button class="cost-toggle mat active" id="toggleMaterial" onclick="App.toggleCost('material')">
+          <span class="toggle-dot"></span> Material
+        </button>
+        <button class="cost-toggle mo active" id="toggleMaoObra" onclick="App.toggleCost('maoObra')">
+          <span class="toggle-dot"></span> Mão de Obra
+        </button>
+      </div>
+
       <div class="topbar-spacer"></div>
 
       <div class="topbar-actions">
@@ -1280,6 +1339,9 @@ const App = (() => {
   let obras = [];
   let currentIdx = 0;
   let state = null;
+  let showMaterial = true;
+  let showMaoObra = true;
+  let custosPainel = null;
 
   function parseNum(v) {
     if (v == null) return null;
@@ -1471,6 +1533,7 @@ const App = (() => {
     bindEditable();
     renderCurveTable();
     requestAnimationFrame(() => { drawMonthly(); drawCurve(); });
+    loadCustosPainel();
   }
 
   function renderSidebar() {
@@ -1593,6 +1656,31 @@ const App = (() => {
     const devCell = (val, formatted, status) =>
       `<td class="dev-cell ${status.cls}" rowspan="2"><span class="dev-kind">${status.label}</span>${formatted}</td>`;
 
+    const cm = getCustosMensal();
+    const ca = getCustosAccum();
+    const cmPct = cm.map(v => v == null || !m.cv ? null : v / m.cv);
+    const caPct = ca.map(v => v == null || !m.cv ? null : v / m.cv);
+    const hasCustos = custosPainel && (showMaterial || showMaoObra);
+
+    let matRow = '', moRow = '';
+    if (custosPainel && showMaterial) {
+      const matMensal = state.meses.map(mo => custosPainel.material[mo.toLowerCase()] || null);
+      matRow = `<tr class="cost-row"><td class="row-label mat-label">Custo Material</td>
+        ${matMensal.map(v => `<td class="money-cell">${money(v)}</td>`).join('')}
+        <td></td><td></td></tr>`;
+    }
+    if (custosPainel && showMaoObra) {
+      const moMensal = state.meses.map(mo => custosPainel.maoObra[mo.toLowerCase()] || null);
+      moRow = `<tr class="cost-row mo-row"><td class="row-label mo-label">Custo Mão de Obra</td>
+        ${moMensal.map(v => `<td class="money-cell">${v ? money(v) : '—'}</td>`).join('')}
+        <td></td><td></td></tr>`;
+    }
+
+    const costTotalRow = hasCustos ? `<tr class="cost-row"><td class="row-label total-label" rowspan="2">Custo Total</td>
+        ${cm.map(v => `<td class="money-cell" style="font-weight:800">${money(v)}</td>`).join('')}
+        <td rowspan="2"></td><td rowspan="2"></td></tr>
+      <tr class="cost-row">${ca.map(v => `<td class="pct-cell">${money(v)}</td>`).join('')}</tr>` : '';
+
     document.getElementById('reportBody').innerHTML = `
       <tr><td class="row-label" rowspan="2">Orçado Mensal</td>
         ${state.orcado_mensal.map((v,i) => `<td class="money-cell">${editableCell(money(v),'planned',i)}</td>`).join('')}
@@ -1615,6 +1703,7 @@ const App = (() => {
         ${devCell(m.aDevM, money(m.aDevM), ads)}
       </tr>
       <tr>${raPct.map(v => `<td class="pct-cell">${pct(v)}</td>`).join('')}</tr>
+      ${matRow}${moRow}${costTotalRow}
     `;
   }
 
@@ -1639,11 +1728,16 @@ const App = (() => {
     if (!state.meses || !state.meses.length) { document.getElementById('curveRows').innerHTML = ''; return; }
     const m = metrics();
     const trend = trendValues();
+    const ca = getCustosAccum();
+    const hasCost = ca.some(v => v != null);
+    const curveHead = document.querySelector('.curve-table thead tr');
+    if (curveHead) curveHead.innerHTML = `<th>Mês</th><th>Orçado</th><th>Real</th><th>Tendência</th>${hasCost ? '<th>Custo</th>' : ''}`;
     document.getElementById('curveRows').innerHTML = state.meses.map((mo, i) => `<tr>
       <td>${mo}</td>
       <td>${pct(m.pa[i] == null || !m.cv ? null : m.pa[i]/m.cv)}</td>
       <td>${pct(m.ra[i] == null || !m.cv ? null : m.ra[i]/m.cv)}</td>
       <td>${pct(trend[i])}</td>
+      ${hasCost ? `<td style="color:#8b5cf6;font-weight:700">${pct(ca[i] == null || !m.cv ? null : ca[i]/m.cv)}</td>` : ''}
     </tr>`).join('');
   }
 
@@ -1680,7 +1774,8 @@ const App = (() => {
     const P = isPrinting;
     const pad = { left: 100, right: 30, top: 30, bottom: 60 };
     const pw = w - pad.left - pad.right, ph = h - pad.top - pad.bottom;
-    const max = Math.max(1000, ...state.orcado_mensal.filter(Boolean), ...state.real_mensal.filter(Boolean)) * 1.18;
+    const costVals = getCustosMensal().filter(Boolean);
+    const max = Math.max(1000, ...state.orcado_mensal.filter(Boolean), ...state.real_mensal.filter(Boolean), ...costVals) * 1.18;
     const y = v => pad.top + (max - v) / max * ph;
     const xg = i => pad.left + (i + .5) * (pw / state.meses.length);
     const bw = Math.min(32, pw / state.meses.length / 3.5);
@@ -1721,12 +1816,38 @@ const App = (() => {
       }
     });
 
+    const cmVals = getCustosMensal();
+    const hasCost = cmVals.some(v => v != null);
+    if (hasCost) {
+      ctx.strokeStyle = '#a855f7'; ctx.lineWidth = 2.5; ctx.lineJoin = 'round'; ctx.setLineDash([]);
+      ctx.beginPath();
+      let cStarted = false;
+      cmVals.forEach((v, i) => {
+        if (v == null) return;
+        const gx = xg(i);
+        if (!cStarted) { ctx.moveTo(gx, y(v)); cStarted = true; } else ctx.lineTo(gx, y(v));
+      });
+      ctx.stroke();
+      cmVals.forEach((v, i) => {
+        if (v == null) return;
+        const gx = xg(i);
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(gx, y(v), 5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#a855f7'; ctx.beginPath(); ctx.arc(gx, y(v), 3.5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = P ? '#6b21a8' : '#e9d5ff'; ctx.font = '700 9px Segoe UI'; ctx.textAlign = 'center';
+        ctx.fillText(compactMoney(v), gx, y(v) - 10);
+      });
+    }
+
     ctx.font = '600 11px Segoe UI';
-    const lx = w / 2 - 70;
+    const lx = w / 2 - (hasCost ? 120 : 70);
     ctx.fillStyle = '#0ea5e9'; roundRect(ctx, lx, h - 16, 10, 10, 2); ctx.fill();
     ctx.fillStyle = P ? '#334155' : '#fff'; ctx.textAlign = 'left'; ctx.fillText('Previsto', lx + 14, h - 7);
     ctx.fillStyle = '#f97316'; roundRect(ctx, lx + 82, h - 16, 10, 10, 2); ctx.fill();
     ctx.fillStyle = P ? '#334155' : '#fff'; ctx.fillText('Real', lx + 96, h - 7);
+    if (hasCost) {
+      ctx.fillStyle = '#a855f7'; roundRect(ctx, lx + 142, h - 16, 10, 10, 2); ctx.fill();
+      ctx.fillStyle = P ? '#334155' : '#fff'; ctx.fillText('Custo', lx + 156, h - 7);
+    }
   }
 
   function drawCurve(force) {
@@ -1765,9 +1886,24 @@ const App = (() => {
       ctx.fillStyle = '#22c55e'; ctx.beginPath(); ctx.arc(x(i), y(v), 5, 0, Math.PI * 2); ctx.fill();
     });
 
+    const costAccum = getCustosAccum();
+    const costPct = costAccum.map(v => v == null || !m.cv ? null : v / m.cv);
+    const hasCostCurve = costPct.some(v => v != null);
+    if (hasCostCurve) {
+      ctx.strokeStyle = '#a855f7'; ctx.lineWidth = 2.5; ctx.setLineDash([]); ctx.lineJoin = 'round';
+      ctx.beginPath(); started = false;
+      costPct.forEach((v, i) => { if (v == null) return; if (!started) { ctx.moveTo(x(i), y(v)); started = true; } else ctx.lineTo(x(i), y(v)); });
+      ctx.stroke();
+      costPct.forEach((v, i) => {
+        if (v == null) return;
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(x(i), y(v), 5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#a855f7'; ctx.beginPath(); ctx.arc(x(i), y(v), 3.5, 0, Math.PI * 2); ctx.fill();
+      });
+    }
+
     ctx.font = '600 11px Segoe UI';
-    const lx = w / 2 - 140, ly = h - 8;
-    ctx.strokeStyle = '#0ea5e9'; ctx.lineWidth = 3;
+    const lx = w / 2 - (hasCostCurve ? 190 : 140), ly = h - 8;
+    ctx.strokeStyle = '#0ea5e9'; ctx.lineWidth = 3; ctx.setLineDash([]);
     ctx.beginPath(); ctx.moveTo(lx, ly - 4); ctx.lineTo(lx + 18, ly - 4); ctx.stroke();
     ctx.fillStyle = '#334155'; ctx.textAlign = 'left'; ctx.fillText('Orçado Acum.', lx + 22, ly);
     ctx.fillStyle = '#22c55e'; ctx.beginPath(); ctx.arc(lx + 130, ly - 4, 5, 0, Math.PI * 2); ctx.fill();
@@ -1775,6 +1911,10 @@ const App = (() => {
     ctx.strokeStyle = '#f97316'; ctx.lineWidth = 2; ctx.setLineDash([4, 3]);
     ctx.beginPath(); ctx.moveTo(lx + 230, ly - 4); ctx.lineTo(lx + 248, ly - 4); ctx.stroke();
     ctx.setLineDash([]); ctx.fillStyle = '#334155'; ctx.fillText('Tendência', lx + 252, ly);
+    if (hasCostCurve) {
+      ctx.fillStyle = '#a855f7'; ctx.beginPath(); ctx.arc(lx + 330, ly - 4, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#334155'; ctx.fillText('Custo Acum.', lx + 340, ly);
+    }
   }
 
   // ═══ ACTIONS ═══
@@ -2018,7 +2158,72 @@ const App = (() => {
     if (session) await initApp();
   })();
 
-  // ═══ CUSTOS ═══
+  // ═══ CUSTOS (PAINEL INTEGRATION) ═══
+  function mesRefToLabel(mesRef) {
+    const [mm, yy] = mesRef.split('/');
+    const idx = parseInt(mm, 10) - 1;
+    return idx >= 0 && idx < 12 ? PT_MONTHS[idx] + '/' + yy : mesRef;
+  }
+
+  function labelToMesRef(label) {
+    const match = String(label).toLowerCase().match(/^([a-zç]{3})\/(\d{2})$/);
+    if (!match) return null;
+    const idx = PT_MONTHS.indexOf(match[1]);
+    return idx >= 0 ? String(idx + 1).padStart(2, '0') + '/' + match[2] : null;
+  }
+
+  async function loadCustosPainel() {
+    if (!state || !state.id) return;
+    if (!custosLoaded) {
+      const { data, error } = await sb.from('dre_custos').select('*').eq('obra_id', state.id).order('data_pedido', { ascending: true });
+      if (error) return;
+      custosData = data || [];
+      custosLoaded = true;
+      populateCustosFilters();
+    }
+    const material = {}, maoObra = {};
+    custosData.forEach(r => {
+      const label = mesRefToLabel(r.mes_ref);
+      const val = r.valor_total || 0;
+      if ((r.tipo || 'Material') === 'Mao de Obra') {
+        maoObra[label] = (maoObra[label] || 0) + val;
+      } else {
+        material[label] = (material[label] || 0) + val;
+      }
+    });
+    custosPainel = { material, maoObra };
+    renderTable(); bindEditable(); renderKpis();
+    renderCurveTable();
+    requestAnimationFrame(() => { drawMonthly(); drawCurve(); });
+  }
+
+  function getCustosMensal() {
+    if (!custosPainel || !state.meses) return state.meses.map(() => null);
+    return state.meses.map(mo => {
+      const m = mo.toLowerCase();
+      let total = 0;
+      if (showMaterial && custosPainel.material[m]) total += custosPainel.material[m];
+      if (showMaoObra && custosPainel.maoObra[m]) total += custosPainel.maoObra[m];
+      return total || null;
+    });
+  }
+
+  function getCustosAccum() {
+    let s = 0;
+    return getCustosMensal().map(v => v == null ? (s > 0 ? s : null) : (s += v));
+  }
+
+  function toggleCost(type) {
+    if (type === 'material') showMaterial = !showMaterial;
+    if (type === 'maoObra') showMaoObra = !showMaoObra;
+    document.getElementById('toggleMaterial').classList.toggle('active', showMaterial);
+    document.getElementById('toggleMaoObra').classList.toggle('active', showMaoObra);
+    renderTable(); bindEditable(); renderKpis();
+    renderCurveTable();
+    requestAnimationFrame(() => { drawMonthly(); drawCurve(); });
+  }
+
+  // ═══ CUSTOS (ABA) ═══
   let custosData = [];
   let custosLoaded = false;
 
@@ -2183,7 +2388,7 @@ const App = (() => {
     });
   });
 
-  return { save, newObra, editObra, duplicateObra, deleteObra, addMonth, addPreviousMonth, removeMonth, exportCsv, printPdf, toggleSidebar, logout };
+  return { save, newObra, editObra, duplicateObra, deleteObra, addMonth, addPreviousMonth, removeMonth, exportCsv, printPdf, toggleSidebar, logout, toggleCost };
 })();
 </script>
 </body>
