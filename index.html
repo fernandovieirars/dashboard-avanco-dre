@@ -720,7 +720,7 @@ table.report {
 
 .curve-chart-body {
   padding: 20px;
-  background: var(--surface);
+  background: linear-gradient(180deg, #fafbff 0%, #f1f5f9 100%);
 }
 
 .curve-chart-body canvas {
@@ -885,14 +885,19 @@ dialog::backdrop {
 .cost-toggle.mat.active .toggle-dot { background: #fff; }
 .cost-toggle.mo.active { background: #ec4899; border-color: #ec4899; }
 .cost-toggle.mo.active .toggle-dot { background: #fff; }
+.cost-toggle.ins { }
+.cost-toggle.ins.active { background: #14b8a6; border-color: #14b8a6; }
+.cost-toggle.ins.active .toggle-dot { background: #fff; }
 
 .cost-toggle:hover:not(.active) { border-color: var(--text-secondary); color: var(--text-secondary); }
 
 .report .cost-row td { background: #faf5ff; }
 .report .cost-row.mo-row td { background: #fdf2f8; }
+.report .cost-row.ins-row td { background: #f0fdfa; }
 .report .cost-row .row-label { font-size: 11px; }
 .report .cost-row .row-label.mat-label { color: #8b5cf6; }
 .report .cost-row .row-label.mo-label { color: #ec4899; }
+.report .cost-row .row-label.ins-label { color: #14b8a6; }
 .report .cost-row .row-label.total-label { color: var(--text); }
 
 /* ═══ CUSTOS ═══ */
@@ -1107,7 +1112,7 @@ dialog::backdrop {
           <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         </button>
       </div>
-      <div class="sidebar-footer-version">Dashboard Avanço DRE v3.0</div>
+      <div class="sidebar-footer-version">Dashboard Avanço DRE v4.0</div>
     </div>
   </aside>
 
@@ -1129,6 +1134,9 @@ dialog::backdrop {
       <div class="cost-toggles">
         <button class="cost-toggle mat active" id="toggleMaterial" onclick="App.toggleCost('material')">
           <span class="toggle-dot"></span> Material
+        </button>
+        <button class="cost-toggle ins active" id="toggleInsumos" onclick="App.toggleCost('insumos')">
+          <span class="toggle-dot"></span> Insumos
         </button>
         <button class="cost-toggle mo active" id="toggleMaoObra" onclick="App.toggleCost('maoObra')">
           <span class="toggle-dot"></span> Mão de Obra
@@ -1161,6 +1169,10 @@ dialog::backdrop {
           <svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
           PDF
         </button>
+        <a class="btn" id="linkReport" href="https://rsc-financeiro.vercel.app/obra" target="_blank" rel="noopener" title="Abrir App Report">
+          <svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          Report
+        </a>
       </div>
     </nav>
 
@@ -1201,6 +1213,10 @@ dialog::backdrop {
           <div class="indicator-card"><div class="indicator-label">Desvio Mensal</div><div class="indicator-value" id="indDevMonth">—</div></div>
           <div class="indicator-card"><div class="indicator-label">Velocidade Média</div><div class="indicator-value" id="indAvgSpeed">—</div></div>
           <div class="indicator-card"><div class="indicator-label">Previsão Término</div><div class="indicator-value" id="indEstEnd">—</div></div>
+          <div class="indicator-card"><div class="indicator-label">Custo Total Acum.</div><div class="indicator-value" id="indCustoTotal">—</div></div>
+          <div class="indicator-card"><div class="indicator-label">Custo / Contrato</div><div class="indicator-value" id="indCustoPct">—</div></div>
+          <div class="indicator-card"><div class="indicator-label">Margem (Real − Custo)</div><div class="indicator-value" id="indMargem">—</div></div>
+          <div class="indicator-card"><div class="indicator-label">IDC (Índice Custo)</div><div class="indicator-value" id="indIDC">—</div></div>
         </div>
 
         <div class="table-card">
@@ -1258,6 +1274,10 @@ dialog::backdrop {
           <button class="btn btn-sm btn-ghost admin-only" onclick="App.downloadTemplateCsv()" title="Baixar modelo CSV">
             <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Modelo
+          </button>
+          <button class="btn btn-danger btn-sm admin-only" onclick="App.deleteCustos()">
+            <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            Excluir
           </button>
         </div>
 
@@ -1341,6 +1361,7 @@ dialog::backdrop {
         <label>Tipo de Custo</label>
         <select id="importTipo" class="form-input">
           <option value="Material">Material</option>
+          <option value="Insumos">Insumos</option>
           <option value="Mao de Obra">Mão de Obra</option>
         </select>
       </div>
@@ -1373,6 +1394,26 @@ dialog::backdrop {
   </div>
 </dialog>
 
+<dialog id="deleteCustosDialog">
+  <div class="dialog-header">Excluir Custos Importados</div>
+  <div class="dialog-body">
+    <p style="margin-bottom:12px;color:var(--text-secondary)">Selecione o tipo de custo a excluir:</p>
+    <div class="form-group">
+      <select id="deleteCustosTipo" class="form-input">
+        <option value="Todos">Todos os tipos</option>
+        <option value="Material">Material</option>
+        <option value="Insumos">Insumos</option>
+        <option value="Mao de Obra">Mão de Obra</option>
+      </select>
+    </div>
+    <p id="deleteCustosCount" style="font-size:13px;font-weight:700;color:var(--red)"></p>
+  </div>
+  <div class="dialog-footer">
+    <button class="btn" onclick="document.getElementById('deleteCustosDialog').close()">Cancelar</button>
+    <button class="btn btn-danger" id="deleteCustosConfirmBtn">Excluir</button>
+  </div>
+</dialog>
+
 <div class="toast-container" id="toasts"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -1393,6 +1434,7 @@ const App = (() => {
   let currentIdx = 0;
   let state = null;
   let showMaterial = true;
+  let showInsumos = true;
   let showMaoObra = true;
   let custosPainel = null;
 
@@ -1677,6 +1719,23 @@ const App = (() => {
     } else {
       document.getElementById('indEstEnd').textContent = '—';
     }
+
+    const costAccumArr = getCustosAccum();
+    const custoTotalVal = costAccumArr.reduce((a, v) => v != null ? v : a, null);
+    document.getElementById('indCustoTotal').textContent = custoTotalVal != null ? compactMoney(custoTotalVal) : '—';
+    document.getElementById('indCustoPct').textContent = custoTotalVal != null && m.cv > 0 ? pct(custoTotalVal / m.cv) : '—';
+    const margemVal = rFinal != null && custoTotalVal != null ? rFinal - custoTotalVal : null;
+    const margemEl = document.getElementById('indMargem');
+    if (margemVal != null) {
+      margemEl.textContent = compactMoney(margemVal);
+      margemEl.style.color = margemVal >= 0 ? 'var(--green)' : 'var(--red)';
+    } else { margemEl.textContent = '—'; margemEl.style.color = ''; }
+    const idcVal = rFinal != null && custoTotalVal != null && custoTotalVal > 0 ? rFinal / custoTotalVal : null;
+    const idcEl = document.getElementById('indIDC');
+    if (idcVal != null) {
+      idcEl.textContent = idcVal.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+      idcEl.style.color = idcVal >= 1 ? 'var(--green)' : idcVal >= 0.9 ? 'var(--primary)' : 'var(--red)';
+    } else { idcEl.textContent = '—'; idcEl.style.color = ''; }
   }
 
   function editableCell(value, type, index) {
@@ -1715,11 +1774,17 @@ const App = (() => {
     const caPct = ca.map(v => v == null || !m.cv ? null : v / m.cv);
     const hasCustos = custosPainel && (showMaterial || showMaoObra);
 
-    let matRow = '', moRow = '';
+    let matRow = '', insRow = '', moRow = '';
     if (custosPainel && showMaterial) {
       const matMensal = state.meses.map(mo => custosPainel.material[mo.toLowerCase()] || null);
       matRow = `<tr class="cost-row"><td class="row-label mat-label">Custo Material</td>
         ${matMensal.map(v => `<td class="money-cell">${money(v)}</td>`).join('')}
+        <td></td><td></td></tr>`;
+    }
+    if (custosPainel && showInsumos) {
+      const insMensal = state.meses.map(mo => custosPainel.insumos[mo.toLowerCase()] || null);
+      insRow = `<tr class="cost-row ins-row"><td class="row-label ins-label">Custo Insumos</td>
+        ${insMensal.map(v => `<td class="money-cell">${v ? money(v) : '—'}</td>`).join('')}
         <td></td><td></td></tr>`;
     }
     if (custosPainel && showMaoObra) {
@@ -1756,7 +1821,7 @@ const App = (() => {
         ${devCell(m.aDevM, money(m.aDevM), ads)}
       </tr>
       <tr>${raPct.map(v => `<td class="pct-cell">${pct(v)}</td>`).join('')}</tr>
-      ${matRow}${moRow}${costTotalRow}
+      ${matRow}${insRow}${moRow}${costTotalRow}
     `;
   }
 
@@ -1910,64 +1975,114 @@ const App = (() => {
     const m = metrics(); const trend = trendValues();
     const planned = m.pa.map(v => v == null || !m.cv ? null : v / m.cv);
     const real = m.ra.map(v => v == null || !m.cv ? null : v / m.cv);
-    const pad = { left: 60, right: 24, top: 24, bottom: 56 };
+    const pad = { left: 60, right: 24, top: 30, bottom: 56 };
     const pw = w - pad.left - pad.right, ph = h - pad.top - pad.bottom;
     const x = i => pad.left + i * (pw / Math.max(1, state.meses.length - 1));
     const y = v => pad.top + (1 - v) * ph;
+    let started;
 
-    ctx.strokeStyle = '#e2e8f0'; ctx.fillStyle = '#94a3b8'; ctx.font = '600 11px Segoe UI';
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
+    bgGrad.addColorStop(0, '#fafbff'); bgGrad.addColorStop(1, '#f1f5f9');
+    ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, w, h);
+
+    ctx.font = '600 11px Segoe UI, system-ui';
     for (let p = 0; p <= 1; p += .2) {
       const yy = y(p);
+      ctx.strokeStyle = 'rgba(148,163,184,.2)'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
       ctx.beginPath(); ctx.moveTo(pad.left, yy); ctx.lineTo(w - pad.right, yy); ctx.stroke();
-      ctx.textAlign = 'right'; ctx.fillText(Math.round(p * 100) + '%', pad.left - 10, yy + 4);
+      ctx.setLineDash([]); ctx.fillStyle = '#94a3b8'; ctx.textAlign = 'right';
+      ctx.fillText(Math.round(p * 100) + '%', pad.left - 10, yy + 4);
     }
-    state.meses.forEach((mo, i) => { ctx.fillStyle = '#64748b'; ctx.textAlign = 'center'; ctx.fillText(mo, x(i), h - 24); });
+    state.meses.forEach((mo, i) => {
+      ctx.fillStyle = '#475569'; ctx.textAlign = 'center'; ctx.font = '600 11px Segoe UI';
+      ctx.fillText(mo, x(i), h - 24);
+      ctx.strokeStyle = 'rgba(148,163,184,.08)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x(i), pad.top); ctx.lineTo(x(i), h - pad.bottom); ctx.stroke();
+    });
 
-    ctx.strokeStyle = '#0ea5e9'; ctx.lineWidth = 3; ctx.lineJoin = 'round'; ctx.beginPath();
-    let started = false;
+    const areaFill = (data, color) => {
+      const grad = ctx.createLinearGradient(0, pad.top, 0, h - pad.bottom);
+      grad.addColorStop(0, color + '22'); grad.addColorStop(1, color + '04');
+      ctx.fillStyle = grad; ctx.beginPath();
+      let s2 = false, fx, lx;
+      data.forEach((v, i) => {
+        if (v == null) return;
+        if (!s2) { fx = x(i); ctx.moveTo(x(i), y(v)); s2 = true; } else ctx.lineTo(x(i), y(v));
+        lx = x(i);
+      });
+      if (s2) { ctx.lineTo(lx, y(0)); ctx.lineTo(fx, y(0)); ctx.closePath(); ctx.fill(); }
+    };
+
+    areaFill(planned, '#0ea5e9');
+
+    ctx.strokeStyle = '#0ea5e9'; ctx.lineWidth = 3; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    ctx.setLineDash([]); ctx.shadowColor = 'rgba(14,165,233,.25)'; ctx.shadowBlur = 6; ctx.shadowOffsetY = 2;
+    ctx.beginPath(); started = false;
     planned.forEach((v, i) => { if (v == null) return; if (!started) { ctx.moveTo(x(i), y(v)); started = true; } else ctx.lineTo(x(i), y(v)); });
-    ctx.stroke();
+    ctx.stroke(); ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
 
-    ctx.strokeStyle = '#f97316'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]); ctx.beginPath();
-    started = false;
+    planned.forEach((v, i) => {
+      if (v == null) return;
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(x(i), y(v), 5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#0ea5e9'; ctx.beginPath(); ctx.arc(x(i), y(v), 3.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#0369a1'; ctx.font = '700 10px Segoe UI'; ctx.textAlign = 'center';
+      ctx.fillText(Math.round((v || 0) * 100) + '%', x(i), y(v) - 12);
+    });
+
+    ctx.strokeStyle = '#f97316'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]); ctx.lineJoin = 'round';
+    ctx.beginPath(); started = false;
     trend.forEach((v, i) => { if (v == null) return; if (!started) { ctx.moveTo(x(i), y(v)); started = true; } else ctx.lineTo(x(i), y(v)); });
     ctx.stroke(); ctx.setLineDash([]);
 
     real.forEach((v, i) => {
       if (v == null) return;
-      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(x(i), y(v), 7, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#22c55e'; ctx.beginPath(); ctx.arc(x(i), y(v), 5, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowColor = 'rgba(34,197,94,.25)'; ctx.shadowBlur = 6;
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(x(i), y(v), 8, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0;
+      ctx.fillStyle = '#22c55e'; ctx.beginPath(); ctx.arc(x(i), y(v), 5.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#15803d'; ctx.font = '800 11px Segoe UI'; ctx.textAlign = 'center';
+      ctx.fillText(Math.round((v || 0) * 100) + '%', x(i), y(v) - 14);
     });
 
     const costAccum = getCustosAccum();
     const costPct = costAccum.map(v => v == null || !m.cv ? null : v / m.cv);
     const hasCostCurve = costPct.some(v => v != null);
     if (hasCostCurve) {
-      ctx.strokeStyle = '#a855f7'; ctx.lineWidth = 2.5; ctx.setLineDash([]); ctx.lineJoin = 'round';
+      areaFill(costPct, '#8b5cf6');
+      ctx.strokeStyle = '#8b5cf6'; ctx.lineWidth = 2.5; ctx.setLineDash([]); ctx.lineJoin = 'round';
+      ctx.shadowColor = 'rgba(139,92,246,.25)'; ctx.shadowBlur = 4;
       ctx.beginPath(); started = false;
       costPct.forEach((v, i) => { if (v == null) return; if (!started) { ctx.moveTo(x(i), y(v)); started = true; } else ctx.lineTo(x(i), y(v)); });
-      ctx.stroke();
+      ctx.stroke(); ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0;
       costPct.forEach((v, i) => {
         if (v == null) return;
         ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(x(i), y(v), 5, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#a855f7'; ctx.beginPath(); ctx.arc(x(i), y(v), 3.5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#8b5cf6'; ctx.beginPath(); ctx.arc(x(i), y(v), 3.5, 0, Math.PI * 2); ctx.fill();
       });
     }
 
     ctx.font = '600 11px Segoe UI';
-    const lx = w / 2 - (hasCostCurve ? 190 : 140), ly = h - 8;
-    ctx.strokeStyle = '#0ea5e9'; ctx.lineWidth = 3; ctx.setLineDash([]);
-    ctx.beginPath(); ctx.moveTo(lx, ly - 4); ctx.lineTo(lx + 18, ly - 4); ctx.stroke();
-    ctx.fillStyle = '#334155'; ctx.textAlign = 'left'; ctx.fillText('Orçado Acum.', lx + 22, ly);
-    ctx.fillStyle = '#22c55e'; ctx.beginPath(); ctx.arc(lx + 130, ly - 4, 5, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#334155'; ctx.fillText('Real Acum.', lx + 140, ly);
-    ctx.strokeStyle = '#f97316'; ctx.lineWidth = 2; ctx.setLineDash([4, 3]);
-    ctx.beginPath(); ctx.moveTo(lx + 230, ly - 4); ctx.lineTo(lx + 248, ly - 4); ctx.stroke();
-    ctx.setLineDash([]); ctx.fillStyle = '#334155'; ctx.fillText('Tendência', lx + 252, ly);
-    if (hasCostCurve) {
-      ctx.fillStyle = '#a855f7'; ctx.beginPath(); ctx.arc(lx + 330, ly - 4, 5, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#334155'; ctx.fillText('Custo Acum.', lx + 340, ly);
-    }
+    const items = [
+      { color: '#0ea5e9', label: 'Orçado Acum.', type: 'line' },
+      { color: '#22c55e', label: 'Real Acum.', type: 'dot' },
+      { color: '#f97316', label: 'Tendência', type: 'dash' },
+    ];
+    if (hasCostCurve) items.push({ color: '#8b5cf6', label: 'Custo Acum.', type: 'dot' });
+    const totalLW = items.reduce((s, it) => s + 22 + ctx.measureText(it.label).width + 18, 0);
+    let lx = (w - totalLW) / 2, ly = h - 8;
+    items.forEach(it => {
+      if (it.type === 'line') {
+        ctx.strokeStyle = it.color; ctx.lineWidth = 3; ctx.setLineDash([]);
+        ctx.beginPath(); ctx.moveTo(lx, ly - 4); ctx.lineTo(lx + 18, ly - 4); ctx.stroke();
+      } else if (it.type === 'dash') {
+        ctx.strokeStyle = it.color; ctx.lineWidth = 2; ctx.setLineDash([4, 3]);
+        ctx.beginPath(); ctx.moveTo(lx, ly - 4); ctx.lineTo(lx + 18, ly - 4); ctx.stroke(); ctx.setLineDash([]);
+      } else {
+        ctx.fillStyle = it.color; ctx.beginPath(); ctx.arc(lx + 9, ly - 4, 5, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.fillStyle = '#475569'; ctx.textAlign = 'left'; ctx.fillText(it.label, lx + 22, ly);
+      lx += 22 + ctx.measureText(it.label).width + 18;
+    });
   }
 
   // ═══ ACTIONS ═══
@@ -1976,6 +2091,8 @@ const App = (() => {
 
     if (isAdmin) {
       syncHeaderInputs();
+      state.atualizado_em = new Date().toLocaleDateString('pt-BR');
+      document.getElementById('headerUpdated').value = state.atualizado_em;
       const { error } = await sb.from('dre_obras').update({
         nome: state.nome,
         contrato: state.contrato,
@@ -2013,6 +2130,7 @@ const App = (() => {
     state = obras[currentIdx];
     custosLoaded = false;
     custosData = [];
+    custosPainel = null;
     render();
     if (document.getElementById('custos').classList.contains('active')) loadCustos();
   }
@@ -2234,17 +2352,16 @@ const App = (() => {
       custosLoaded = true;
       populateCustosFilters();
     }
-    const material = {}, maoObra = {};
+    const material = {}, insumos = {}, maoObra = {};
     custosData.forEach(r => {
       const label = mesRefToLabel(r.mes_ref);
       const val = r.valor_total || 0;
-      if ((r.tipo || 'Material') === 'Mao de Obra') {
-        maoObra[label] = (maoObra[label] || 0) + val;
-      } else {
-        material[label] = (material[label] || 0) + val;
-      }
+      const tipo = r.tipo || 'Material';
+      if (tipo === 'Mao de Obra') maoObra[label] = (maoObra[label] || 0) + val;
+      else if (tipo === 'Insumos') insumos[label] = (insumos[label] || 0) + val;
+      else material[label] = (material[label] || 0) + val;
     });
-    custosPainel = { material, maoObra };
+    custosPainel = { material, insumos, maoObra };
     renderTable(); bindEditable(); renderKpis();
     renderCurveTable();
     requestAnimationFrame(() => { drawMonthly(); drawCurve(); });
@@ -2256,6 +2373,7 @@ const App = (() => {
       const m = mo.toLowerCase();
       let total = 0;
       if (showMaterial && custosPainel.material[m]) total += custosPainel.material[m];
+      if (showInsumos && custosPainel.insumos[m]) total += custosPainel.insumos[m];
       if (showMaoObra && custosPainel.maoObra[m]) total += custosPainel.maoObra[m];
       return total || null;
     });
@@ -2268,8 +2386,10 @@ const App = (() => {
 
   function toggleCost(type) {
     if (type === 'material') showMaterial = !showMaterial;
+    if (type === 'insumos') showInsumos = !showInsumos;
     if (type === 'maoObra') showMaoObra = !showMaoObra;
     document.getElementById('toggleMaterial').classList.toggle('active', showMaterial);
+    document.getElementById('toggleInsumos').classList.toggle('active', showInsumos);
     document.getElementById('toggleMaoObra').classList.toggle('active', showMaoObra);
     renderTable(); bindEditable(); renderKpis();
     renderCurveTable();
@@ -2609,6 +2729,54 @@ const App = (() => {
     if (document.getElementById('custos').classList.contains('active')) renderCustos();
   }
 
+  function deleteCustos() {
+    if (!isAdmin || !state || !state.id) return;
+    const dlg = document.getElementById('deleteCustosDialog');
+    const sel = document.getElementById('deleteCustosTipo');
+    const countEl = document.getElementById('deleteCustosCount');
+    const btn = document.getElementById('deleteCustosConfirmBtn');
+
+    const updateCount = () => {
+      const tipo = sel.value;
+      const count = tipo === 'Todos'
+        ? custosData.length
+        : custosData.filter(r => (r.tipo || 'Material') === tipo).length;
+      countEl.textContent = count > 0
+        ? `${count} registro(s) serão excluídos permanentemente.`
+        : 'Nenhum registro encontrado para este tipo.';
+      btn.disabled = count === 0;
+    };
+
+    sel.value = 'Todos';
+    updateCount();
+    sel.onchange = updateCount;
+
+    btn.onclick = async () => {
+      const tipo = sel.value;
+      let query = sb.from('dre_custos').delete().eq('obra_id', state.id);
+      if (tipo !== 'Todos') query = query.eq('tipo', tipo);
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading-spinner"></span> Excluindo...';
+
+      const { error } = await query;
+      btn.disabled = false;
+      btn.textContent = 'Excluir';
+
+      if (error) { toast('Erro ao excluir: ' + error.message, 'error'); return; }
+
+      dlg.close();
+      toast(`Custos "${tipo}" excluídos`, 'success');
+      custosLoaded = false;
+      custosPainel = null;
+      custosData = [];
+      await loadCustosPainel();
+      if (document.getElementById('custos').classList.contains('active')) loadCustos();
+    };
+
+    dlg.showModal();
+  }
+
   function downloadTemplateCsv() {
     const header = 'pedido;data;fornecedor;insumo;categoria;quantidade;unidade;valor_unitario;valor_total';
     const example = '12345;01/06/2026;FORNECEDOR EXEMPLO LTDA;CIMENTO CP III 50KG;Concreto/Agregados;10;sc50kg;42.50;425.00';
@@ -2617,7 +2785,7 @@ const App = (() => {
     URL.revokeObjectURL(a.href);
   }
 
-  return { save, newObra, editObra, duplicateObra, deleteObra, addMonth, addPreviousMonth, removeMonth, exportCsv, printPdf, toggleSidebar, logout, toggleCost, openImportCustos, doImportCustos, downloadTemplateCsv };
+  return { save, newObra, editObra, duplicateObra, deleteObra, addMonth, addPreviousMonth, removeMonth, exportCsv, printPdf, toggleSidebar, logout, toggleCost, openImportCustos, doImportCustos, downloadTemplateCsv, deleteCustos };
 })();
 </script>
 </body>
