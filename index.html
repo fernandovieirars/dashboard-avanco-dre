@@ -1360,6 +1360,7 @@ dialog::backdrop {
       <div class="form-group" style="flex:1">
         <label>Tipo de Custo</label>
         <select id="importTipo" class="form-input">
+          <option value="Auto">Auto-detectar</option>
           <option value="Material">Material</option>
           <option value="Insumos">Insumos</option>
           <option value="Mao de Obra">Mão de Obra</option>
@@ -2575,7 +2576,18 @@ const App = (() => {
     valor_total: ['valor total','valor_total','v.total','v total','total','valor'],
     categoria: ['categoria','grupo','cat','tipo material'],
     mes_ref: ['mes','mês','mes_ref','competencia','competência','periodo','período'],
+    tipo: ['tipo','tipo custo','tipo_custo','classificacao','classificação'],
   };
+
+  const MO_RE = /m[aã]o.de.obra|servi[cç]o|terceiriz|empreitei|pedreiro|ajudante|encarregado|mestre.de.obra|operador|montador|soldador|eletricista|encanador|pintor|carpinteiro|armador|ferreiro|guincheiro|operario|oper[aá]rio|bombeiro.hidr|topograf/i;
+  const INS_RE = /combust[ií]vel|diesel|gasolina|[eé]pi|seguran[cç]a|alimenta[cç]|refei[cç]|marmitex|quentinha|transporte|frete|loca[cç][aã]o|aluguel|equipamento|andaime|container|banheiro.qu[ií]m|container|guincho|guindaste|betoneira|retro.?escav|escavadeira|caminha|caminh[aã]o|ferramenta/i;
+
+  function detectTipo(categoria, insumo, fornecedor) {
+    const text = [categoria, insumo, fornecedor].join(' ');
+    if (MO_RE.test(text)) return 'Mao de Obra';
+    if (INS_RE.test(text)) return 'Insumos';
+    return 'Material';
+  }
 
   function mapColumns(headers) {
     const map = {};
@@ -2648,7 +2660,8 @@ const App = (() => {
       }
 
       const catDefault = document.getElementById('importCatDefault').value;
-      const tipo = document.getElementById('importTipo').value;
+      const tipoSel = document.getElementById('importTipo').value;
+      const isAuto = tipoSel === 'Auto';
       importRows = [];
 
       for (let i = 1; i < lines.length; i++) {
@@ -2664,20 +2677,32 @@ const App = (() => {
         if (!vt) continue;
 
         const mr = get('mes_ref') || mesRefFromDate(data);
+        const cat = get('categoria') || catDefault || 'Outros';
+        const ins = get('insumo').substring(0, 120) || 'Item';
+        const forn = get('fornecedor').substring(0, 120);
+        const csvTipo = get('tipo');
+
+        let tipo;
+        if (!isAuto) tipo = tipoSel;
+        else if (csvTipo && /material|insumo|m[aã]o/i.test(csvTipo)) {
+          if (/m[aã]o/i.test(csvTipo)) tipo = 'Mao de Obra';
+          else if (/insumo/i.test(csvTipo)) tipo = 'Insumos';
+          else tipo = 'Material';
+        } else tipo = detectTipo(cat, ins, forn);
 
         importRows.push({
           obra_id: state.id,
           pedido: get('pedido') || '',
           data_pedido: data,
           mes_ref: mr,
-          fornecedor: get('fornecedor').substring(0, 120),
-          categoria: get('categoria') || catDefault || 'Outros',
-          insumo: get('insumo').substring(0, 120) || 'Item',
+          fornecedor: forn,
+          categoria: cat,
+          insumo: ins,
           quantidade: qty,
           unidade: get('unidade') || 'vb',
           valor_unitario: vu || Math.round(vt / qty * 100) / 100,
           valor_total: Math.round(vt * 100) / 100,
-          tipo: tipo,
+          tipo,
         });
       }
 
@@ -2686,18 +2711,24 @@ const App = (() => {
         return;
       }
 
+      const tipoCount = { Material: 0, Insumos: 0, 'Mao de Obra': 0 };
+      importRows.forEach(r => { tipoCount[r.tipo] = (tipoCount[r.tipo] || 0) + 1; });
+      const tipoColors = { Material: '#8b5cf6', Insumos: '#14b8a6', 'Mao de Obra': '#ec4899' };
+
       const prev = document.getElementById('importPreview');
       const totalVal = importRows.reduce((s, r) => s + r.valor_total, 0);
       prev.innerHTML = `<table class="report" style="min-width:auto;font-size:11px">
-        <thead><tr><th>Pedido</th><th>Data</th><th>Mês</th><th style="text-align:left">Fornecedor</th><th style="text-align:left">Insumo</th><th>Valor</th></tr></thead>
+        <thead><tr><th>Pedido</th><th>Data</th><th>Mês</th><th style="text-align:left">Fornecedor</th><th style="text-align:left">Insumo</th><th>Tipo</th><th>Valor</th></tr></thead>
         <tbody>${importRows.slice(0, 50).map(r => `<tr>
           <td>${r.pedido}</td><td>${r.data_pedido || ''}</td><td>${r.mes_ref || ''}</td>
           <td style="text-align:left;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.fornecedor}</td>
           <td style="text-align:left;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.insumo}</td>
+          <td style="color:${tipoColors[r.tipo] || '#64748b'};font-weight:700;font-size:10px">${r.tipo === 'Mao de Obra' ? 'M.Obra' : r.tipo}</td>
           <td>${money(r.valor_total)}</td>
-        </tr>`).join('')}${importRows.length > 50 ? `<tr><td colspan="6" style="text-align:center;color:var(--text-muted)">… e mais ${importRows.length - 50} linhas</td></tr>` : ''}</tbody></table>`;
+        </tr>`).join('')}${importRows.length > 50 ? `<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">… e mais ${importRows.length - 50} linhas</td></tr>` : ''}</tbody></table>`;
       prev.style.display = 'block';
-      document.getElementById('importStatus').textContent = `${importRows.length} itens | Total: ${money(totalVal)} | Tipo: ${tipo}`;
+      const tipoSummary = Object.entries(tipoCount).filter(([,c]) => c > 0).map(([t,c]) => `${t}: ${c}`).join(' | ');
+      document.getElementById('importStatus').textContent = `${importRows.length} itens | Total: ${money(totalVal)} | ${tipoSummary}`;
       document.getElementById('importConfirmBtn').disabled = false;
     };
     reader.readAsText(file, 'UTF-8');
