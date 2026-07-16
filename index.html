@@ -900,6 +900,26 @@ dialog::backdrop {
 .report .cost-row .row-label.ins-label { color: #14b8a6; }
 .report .cost-row .row-label.total-label { color: var(--text); }
 
+/* ═══ OBRA SELECT ═══ */
+.obra-select-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.obra-select-card:hover {
+  border-color: var(--primary);
+  background: var(--bg);
+  box-shadow: 0 0 0 3px rgba(234,179,8,.12);
+}
+.obra-select-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--primary); flex-shrink: 0; }
+.obra-select-name { font-size: 14px; font-weight: 700; }
+.obra-select-info { font-size: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
 /* ═══ CUSTOS ═══ */
 .custos-kpi-grid {
   display: grid;
@@ -1294,6 +1314,18 @@ dialog::backdrop {
 
         <div class="table-card">
           <div class="table-card-header">
+            <span class="table-card-title">Gasto Mensal por Tipo</span>
+          </div>
+          <div class="table-scroll">
+            <table class="report custos-report">
+              <thead id="custosMensalTipoHead"></thead>
+              <tbody id="custosMensalTipoBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-card-header">
             <span class="table-card-title">Top 10 Fornecedores</span>
           </div>
           <div class="table-scroll">
@@ -1393,6 +1425,11 @@ dialog::backdrop {
     <button class="btn" onclick="document.getElementById('importDialog').close()">Cancelar</button>
     <button class="btn btn-primary" id="importConfirmBtn" disabled onclick="App.doImportCustos()">Importar</button>
   </div>
+</dialog>
+
+<dialog id="obraSelectDialog" style="max-width:520px">
+  <div class="dialog-header">Selecione a Obra</div>
+  <div class="dialog-body" id="obraSelectList" style="display:flex;flex-direction:column;gap:8px;max-height:400px;overflow-y:auto"></div>
 </dialog>
 
 <dialog id="deleteCustosDialog">
@@ -1606,17 +1643,45 @@ const App = (() => {
   }
 
   async function loadObras() {
+    const prevId = state ? state.id : null;
     const { data, error } = await sb.from('dre_obras').select('*').order('created_at', { ascending: true });
     if (error) { toast('Erro ao carregar obras: ' + error.message, 'error'); return; }
     obras = data || [];
     if (obras.length === 0 && isAdmin) {
       toast('Nenhuma obra encontrada. Crie a primeira.', 'info');
       state = { id: null, nome: '', contrato: '', valor_contrato: 0, atualizado_em: '', meses: [], orcado_mensal: [], real_mensal: [] };
+    } else if (prevId) {
+      currentIdx = Math.max(0, obras.findIndex(o => o.id === prevId));
+      state = obras[currentIdx];
     } else if (obras.length > 0) {
       currentIdx = 0;
-      state = obras[currentIdx];
+      state = obras[0];
     }
     if (state) render();
+    if (!prevId && obras.length > 1) showObraSelectDialog();
+  }
+
+  function showObraSelectDialog() {
+    const dlg = document.getElementById('obraSelectDialog');
+    const list = document.getElementById('obraSelectList');
+    list.innerHTML = obras.map((o, i) => {
+      const info = [o.contrato, o.valor_contrato ? compactMoney(o.valor_contrato) : '', o.atualizado_em].filter(Boolean).join(' · ');
+      return `<div class="obra-select-card" data-idx="${i}">
+        <span class="obra-select-dot"></span>
+        <div style="flex:1;min-width:0">
+          <div class="obra-select-name">${o.nome || 'SEM NOME'}</div>
+          ${info ? `<div class="obra-select-info">${info}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+    list.querySelectorAll('.obra-select-card').forEach(card => {
+      card.onclick = () => {
+        const idx = Number(card.dataset.idx);
+        dlg.close();
+        if (idx !== currentIdx) switchObra(idx);
+      };
+    });
+    dlg.showModal();
   }
 
   // ═══ RENDER ═══
@@ -2441,9 +2506,33 @@ const App = (() => {
     document.getElementById('custosMedia').textContent = mesesSet.size > 0 ? compactMoney(total / mesesSet.size) : '—';
     document.getElementById('custosRowCount').textContent = `${rows.length} itens`;
 
+    renderCustosMensalTipo(rows);
     renderCustosTopForn(rows, total);
     renderCustosDetalhe(rows);
     requestAnimationFrame(() => { drawCustosMensal(rows); drawCustosCat(rows); });
+  }
+
+  function renderCustosMensalTipo(rows) {
+    const byMesTipo = {};
+    const mesesSet = new Set();
+    rows.forEach(r => {
+      const mes = r.mes_ref;
+      const tipo = r.tipo || 'Material';
+      mesesSet.add(mes);
+      if (!byMesTipo[mes]) byMesTipo[mes] = {};
+      byMesTipo[mes][tipo] = (byMesTipo[mes][tipo] || 0) + (r.valor_total || 0);
+    });
+    const meses = [...mesesSet].sort();
+
+    document.getElementById('custosMensalTipoHead').innerHTML = '<tr><th>Mês</th><th style="color:#c4b5fd">Material</th><th style="color:#5eead4">Insumos</th><th style="color:#f9a8d4">Mão de Obra</th><th>Total</th></tr>';
+
+    let tMat = 0, tIns = 0, tMo = 0;
+    document.getElementById('custosMensalTipoBody').innerHTML = meses.map(mes => {
+      const d = byMesTipo[mes] || {};
+      const mat = d['Material'] || 0, ins = d['Insumos'] || 0, mo = d['Mao de Obra'] || 0;
+      tMat += mat; tIns += ins; tMo += mo;
+      return `<tr><td>${mes}</td><td>${mat ? money(mat) : '—'}</td><td>${ins ? money(ins) : '—'}</td><td>${mo ? money(mo) : '—'}</td><td style="font-weight:800">${money(mat + ins + mo)}</td></tr>`;
+    }).join('') + `<tr style="background:var(--surface-alt)"><td style="font-weight:800">TOTAL</td><td style="font-weight:800;color:#8b5cf6">${money(tMat)}</td><td style="font-weight:800;color:#14b8a6">${money(tIns)}</td><td style="font-weight:800;color:#ec4899">${money(tMo)}</td><td style="font-weight:800">${money(tMat + tIns + tMo)}</td></tr>`;
   }
 
   function renderCustosTopForn(rows, total) {
